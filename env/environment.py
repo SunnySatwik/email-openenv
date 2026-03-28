@@ -126,19 +126,18 @@ class EmailEnv:
         elif self.task == "easy":
             reward = easy_grader.grade(
                 action.get("is_spam", False),
-                email.true_label.get("spam", False),
+                email,
             )
         elif self.task == "medium":
             reward = medium_grader.grade(
                 action.get("priority", "low"),
-                email.true_label.get("priority", "low"),
+                email,
             )
         elif self.task == "hard":
             reward = hard_grader.grade(
                 action.get("reply_text", ""),
-                action.get("should_reply", True),
-                email.true_label.get("suggested_reply"),
-                email.true_label.get("reply_required", False),
+                action.get("should_reply", False),
+                email,
             )
         else:
             raise ValueError(f"Unknown task: {self.task}")
