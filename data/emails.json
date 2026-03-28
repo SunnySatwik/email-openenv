@@ -1,0 +1,67 @@
+[
+  {
+    "id": "email_001",
+    "sender": "john.doe@company.com",
+    "subject": "Meeting tomorrow at 2pm",
+    "body": "Hi, I wanted to confirm our meeting tomorrow at 2pm to discuss Q2 planning. Please let me know if this works for you.",
+    "timestamp": "2024-03-27T09:30:00Z",
+    "true_label": {
+      "spam": false,
+      "priority": "high",
+      "reply_required": true,
+      "suggested_reply": "Thanks for confirming. Yes, 2pm works well for me. See you tomorrow."
+    }
+  },
+  {
+    "id": "email_002",
+    "sender": "no-reply@promotions.com",
+    "subject": "EXCLUSIVE OFFER: 50% OFF NOW!",
+    "body": "Dear valued customer, THIS IS NOT A DRILL! Get 50% off everything! Click here to claim your deal NOW! Limited time offer!",
+    "timestamp": "2024-03-27T08:15:00Z",
+    "true_label": {
+      "spam": true,
+      "priority": "low",
+      "reply_required": false,
+      "suggested_reply": null
+    }
+  },
+  {
+    "id": "email_003",
+    "sender": "sarah.smith@company.com",
+    "subject": "Report feedback",
+    "body": "I reviewed the quarterly report you sent. Great work overall, but I have a few suggestions on the financial section. Can we discuss this week?",
+    "timestamp": "2024-03-27T10:45:00Z",
+    "true_label": {
+      "spam": false,
+      "priority": "high",
+      "reply_required": true,
+      "suggested_reply": "Thanks for reviewing! I'd love to discuss your suggestions. How about Wednesday at 3pm?"
+    }
+  },
+  {
+    "id": "email_004",
+    "sender": "noreply@newsletter.org",
+    "subject": "Your weekly digest",
+    "body": "This week in tech: New updates on AI, Cloud computing, and Web3. Read our latest articles at our website.",
+    "timestamp": "2024-03-27T07:00:00Z",
+    "true_label": {
+      "spam": false,
+      "priority": "low",
+      "reply_required": false,
+      "suggested_reply": null
+    }
+  },
+  {
+    "id": "email_005",
+    "sender": "manager@company.com",
+    "subject": "Action required: Budget approval",
+    "body": "The Q2 budget needs your approval by end of day Friday. Please review the attached document and confirm.",
+    "timestamp": "2024-03-27T11:20:00Z",
+    "true_label": {
+      "spam": false,
+      "priority": "urgent",
+      "reply_required": true,
+      "suggested_reply": "Will review and get back to you by EOD Friday."
+    }
+  }
+]
