@@ -1,2 +1,5 @@
+openenv-core
 pydantic>=2.0.0
+openai
+python-dotenv
 pytest>=7.0.0
