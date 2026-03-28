@@ -1,13 +1,11 @@
-from graders.easy_grader import grade_easy
+from graders.medium_grader import grade_medium
 
 email = {
-    "subject": "Win a free iPhone",
-    "body": "Click now to claim",
-    "true_label": {
-        "spam": True
-    }
+    "subject": "Urgent client issue",
+    "body": "Need immediate attention",
+    "true_label": {"priority": "urgent"}
 }
 
-action = {"is_spam": True}
+action = {"priority": "high"}
 
-print("Score:", grade_easy(action, email))
+print("Score:", grade_medium(action, email))
