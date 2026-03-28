@@ -124,19 +124,18 @@ class EmailEnv:
         if not email.true_label:
             reward = 0.5
         elif self.task == "easy":
-            reward = easy_grader.grade(
-                action.get("is_spam", False),
+            reward = easy_grader.grade_easy(
+                action,
                 email,
             )
         elif self.task == "medium":
-            reward = medium_grader.grade(
-                action.get("priority", "low"),
+            reward = medium_grader.grade_medium(
+                action,
                 email,
             )
         elif self.task == "hard":
-            reward = hard_grader.grade(
-                action.get("reply_text", ""),
-                action.get("should_reply", False),
+            reward = hard_grader.grade_hard(
+                action,
                 email,
             )
         else:

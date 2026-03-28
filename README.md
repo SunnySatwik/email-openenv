@@ -1,307 +1,273 @@
-# Email Assistant OpenEnv
+# AI Email Assistant OpenEnv Environment
 
-A production-grade OpenEnv (Gym-like) environment for training agents on email management tasks. Built with Pydantic models and meaningful reward functions.
+An OpenAI-powered reinforcement learning environment for training agents to handle email management tasks. Simulates real-world email triage automation with three difficulty levels.
+
+## Overview
+
+Email management is a universal challenge. This environment automates email triage decisions:
+
+- **Spam Detection**: Filter unwanted messages
+- **Priority Classification**: Categorize by urgency
+- **Reply Generation**: Decide when and how to respond
+
+Perfect for training agents to handle domain-specific email tasks using reinforcement learning principles.
 
 ## Features
 
-✅ **Three task levels:**
-- **Easy**: Spam classification (binary classification)
-- **Medium**: Priority detection (4-level graduated rewards)
-- **Hard**: Reply generation (semantic similarity-based rewards)
+### Multi-Task Environment
 
-✅ **Clean interface:**
-- `reset()` - Start a new episode
-- `step(action)` - Execute an action and get feedback
-- `state()` - Get current episode statistics
+- **Easy** (Spam Classification): Binary classification with graduated rewards for reasonable mistakes
+- **Medium** (Priority Detection): 4-level classification (low/medium/high/urgent) with distance-based scoring
+- **Hard** (Reply Generation): Multi-component scoring (decision + content relevance + tone quality)
 
-✅ **Production code quality:**
-- Pydantic models for type safety
-- Meaningful, graduated reward functions (not just binary)
-- Comprehensive tests
-- Clear documentation
+### Gym-Like Interface
+
+Standard RL environment with `reset()`, `step()`, and `state()` methods for seamless integration with RL frameworks.
+
+### Realistic Simulations
+
+- Real email data with heterogeneous content types
+- Multi-step episodes with accumulating rewards
+- Ground truth labels for all tasks
+
+## Environment Design
+
+The environment follows the OpenAI Gym pattern:
+
+```python
+env = EmailEnv(task="easy", max_steps=10)
+observation = env.reset()
+
+while True:
+    action = agent.act(observation)
+    observation, reward, done, info = env.step(action)
+    if done:
+        break
+
+print(env.state())  # Episode statistics
+```
+
+**Key Concepts:**
+- Episodes: Fixed-length sequences of emails (default 10 steps)
+- State: Current email, step count, task type
+- Reward: Task-specific scoring (0.0 to 1.0)
+- Done: When max_steps reached or all emails processed
+
+## Action Space
+
+### Easy Task (Spam Classification)
+```json
+{
+  "is_spam": true
+}
+```
+
+### Medium Task (Priority Detection)
+```json
+{
+  "priority": "low"
+}
+```
+Valid values: `"low"`, `"medium"`, `"high"`, `"urgent"`
+
+### Hard Task (Reply Generation)
+```json
+{
+  "should_reply": true,
+  "reply_text": "Thank you for reaching out. I will respond shortly."
+}
+```
+
+## Observation Space
+
+Each observation contains:
+
+```python
+Observation(
+    email=Email(
+        id="unique_id",
+        sender="sender@example.com",
+        subject="Email subject line",
+        body="Email message body",
+        timestamp="2024-01-15T10:30:00Z",
+        true_label={"spam": False, "priority": "high", ...}
+    ),
+    step_count=1,
+    task="easy"
+)
+```
+
+## Reward System
+
+### Easy Task: Spam Classification
+- **Correct prediction** → 1.0
+- **Reasonable partial match** (spam indicators present but wasn't spam) → 0.5
+- **Wrong prediction** → 0.0
+
+### Medium Task: Priority Classification
+- **Exact match** → 1.0
+- **1 level off** → 0.6  (e.g., predicted "high" instead of "urgent")
+- **2 levels off** → 0.3
+- **Very wrong** (3+ levels) → 0.0
+
+Includes keyword-based bonuses for reasonable guesses based on email content.
+
+### Hard Task: Reply Generation
+Multi-component weighted scoring:
+
+- **Decision Correctness** (50% weight): Should reply or not?
+  - Correct: 1.0 | Incorrect: 0.0
+
+- **Content Relevance** (30% weight): Keyword overlap with email
+  - Full match: 1.0 | Partial: 0.5 | None: 0.0
+
+- **Response Quality** (20% weight): Length + polite tone
+  - Length > 10 chars: 0.5 base | Polite words: up to +0.5
+
+Final score = (0.5 × decision) + (0.3 × relevance) + (0.2 × quality) - penalties + bonuses
+
+## Baseline Agents
+
+### OpenAI-Based Agent
+
+Uses GPT-4o-mini to generate actions. Implements:
+- Dynamic prompting based on task
+- Robust JSON parsing with fallback defaults
+- Real-time API integration
+
+### Mock Agent
+
+Heuristic-based agent for testing without API keys:
+- Keyword-matching for spam detection
+- Priority heuristics for classification
+- Template-based reply generation
 
 ## Installation
 
+### Requirements
+- Python 3.8+
+- OpenAI API key (for running the baseline agent)
+
+### Setup
+
 ```bash
+# Clone or navigate to project
+cd email-openenv
+
+# Install dependencies
 pip install -r requirements.txt
 ```
 
-## Quick Start
-
-```python
-from env import EmailEnv
-
-# Create environment
-env = EmailEnv(task="easy", max_steps=5)
-
-# Reset and get initial observation
-obs = env.reset()
-
-# Take actions and get feedback
-action = {"is_spam": False}
-next_obs, reward, done, info = env.step(action)
-
-# Check episode statistics
-state = env.state()
-print(f"Average reward: {state['average_reward']:.2f}")
+**requirements.txt**
+```
+openai>=1.0.0
+pydantic>=2.0.0
 ```
 
-## API Reference
+## How to Run
 
-### EmailEnv
-
-Main environment class.
-
-**Constructor:**
-```python
-EmailEnv(
-    task: Literal["easy", "medium", "hard"] = "easy",
-    max_steps: int = 10,
-    seed: Optional[int] = None,
-)
-```
-
-**Methods:**
-
-#### `reset() -> Observation`
-Start a new episode and return the initial observation.
-
-```python
-obs = env.reset()
-```
-
-Returns an `Observation` containing:
-- `email: Email` - The current email to process
-- `step_count: int` - Current step in episode
-- `task: str` - Task type
-
-#### `step(action: dict) -> Tuple[Observation, float, bool, StepInfo]`
-Execute one action and receive feedback.
-
-```python
-next_obs, reward, done, info = env.step(action)
-```
-
-**Parameters:**
-- `action` - Dict with task-specific fields (see below)
-
-**Returns:**
-- `observation: Observation` - Next state
-- `reward: float` - Reward in [0, 1] range (meaningful, not binary)
-- `done: bool` - Whether episode is finished
-- `info: StepInfo` - Metadata including ground truth
-
-#### `state() -> dict`
-Get current episode statistics.
-
-```python
-state = env.state()
-```
-
-Returns dict with:
-- `task` - Task type
-- `step_count` - Current step
-- `max_steps` - Maximum steps
-- `episode_rewards` - List of rewards
-- `average_reward` - Mean reward
-- `total_reward` - Sum of rewards
-- `is_done` - Episode finished flag
-
-## Task Specifications
-
-### Easy Task: Spam Classification
-
-**Action format:**
-```python
-action = {"is_spam": bool}
-```
-
-**Reward function:**
-- Correct prediction: 1.0
-- Incorrect prediction: 0.0
-
-**Example:**
-```python
-env = EmailEnv(task="easy")
-obs = env.reset()
-action = {"is_spam": "EXCLUSIVE" in obs.email.subject}
-obs, reward, done, info = env.step(action)
-```
-
-### Medium Task: Priority Classification
-
-**Action format:**
-```python
-action = {"priority": "low" | "medium" | "high" | "urgent"}
-```
-
-**Reward function (graduated penalties):**
-- Perfect match: 1.0
-- Off by one level: 0.5
-- Off by two levels: 0.25
-- Off by three levels: 0.0
-
-**Example:**
-```python
-env = EmailEnv(task="medium")
-obs = env.reset()
-if "Action required" in obs.email.subject:
-    priority = "urgent"
-else:
-    priority = "low"
-action = {"priority": priority}
-obs, reward, done, info = env.step(action)
-```
-
-### Hard Task: Reply Generation
-
-**Action format:**
-```python
-action = {
-    "reply_text": str,
-    "should_reply": bool,
-}
-```
-
-**Reward function (multi-aspect):**
-1. Decision correctness (0.7 weight): Was reply needed?
-2. Content quality (0.3 weight): Similarity to ground truth
-
-- Perfect response: 1.0
-- Correct decision, good content: 0.7-1.0
-- Wrong decision: 0.0
-
-**Example:**
-```python
-env = EmailEnv(task="hard")
-obs = env.reset()
-email = obs.email
-
-# Decide if reply needed
-should_reply = not any(
-    w in email.sender for w in ["noreply", "newsletter"]
-)
-
-# Generate reply
-reply_text = "Thanks for your email. I appreciate your message."
-
-action = {
-    "reply_text": reply_text,
-    "should_reply": should_reply,
-}
-obs, reward, done, info = env.step(action)
-```
-
-## Data Format
-
-Emails are loaded from `data/emails.json`. Each email has:
-
-```json
-{
-    "id": "string",
-    "sender": "string",
-    "subject": "string",
-    "body": "string",
-    "timestamp": "string",
-    "true_label": {
-        "spam": bool,
-        "priority": "string",
-        "reply_required": bool,
-        "suggested_reply": "string or null"
-    }
-}
-```
-
-## Pydantic Models
-
-All data structures use Pydantic for validation:
-
-```python
-from env import (
-    Email,                      # Email data
-    Observation,                # Environment observation
-    SpamClassificationAction,   # Easy task action
-    PriorityAction,             # Medium task action
-    ReplyAction,                # Hard task action
-    StepInfo,                   # Step return info
-)
-```
-
-## Example: Full Training Loop
-
-```python
-from env import EmailEnv
-
-def train_agent(task="easy", episodes=10):
-    env = EmailEnv(task=task, max_steps=5)
-    episode_returns = []
-
-    for episode in range(episodes):
-        obs = env.reset()
-        done = False
-
-        while not done:
-            # Agent generates action (placeholder)
-            if task == "easy":
-                action = {"is_spam": False}
-            elif task == "medium":
-                action = {"priority": "medium"}
-            else:
-                action = {"reply_text": "Thanks", "should_reply": True}
-
-            obs, reward, done, info = env.step(action)
-
-        state = env.state()
-        episode_returns.append(state["total_reward"])
-        print(f"Episode {episode}: {state['total_reward']:.2f}")
-
-    print(f"Average return: {sum(episode_returns) / len(episode_returns):.2f}")
-
-train_agent("easy", episodes=5)
-```
-
-## Testing
-
-Run tests:
+### Mock Agent (No API Key Required)
 ```bash
-pytest tests/
-pytest tests/test_environment.py -v
-pytest tests/test_graders.py -v
+python baseline/mock_agent.py --task easy --max-steps 5
+python baseline/mock_agent.py --task medium
+python baseline/mock_agent.py --task hard --max-steps 10
 ```
 
-Run examples:
+### OpenAI Agent
+
+Set your API key:
 ```bash
-python example_usage.py
+# macOS/Linux
+export OPENAI_API_KEY="sk-..."
+
+# Windows
+set OPENAI_API_KEY=sk-...
 ```
 
-## Architecture
+Run agent:
+```bash
+python baseline/run_agent.py --task easy
+python baseline/run_agent.py --task hard --max-steps 10
 
-```
-env/
-├── environment.py   # Main EmailEnv class
-├── models.py        # Pydantic data models
-├── graders.py       # Reward calculation
-└── __init__.py      # Package exports
-
-data/
-└── emails.json      # Email dataset
-
-tests/
-├── test_environment.py  # Environment tests
-└── test_graders.py      # Reward grader tests
+# Run all tasks and compare scores
+python baseline/run_agent.py --task all --max-steps 5
 ```
 
-## Design Principles
+### Output Example
+```
+============================================================
+OpenEnv Baseline Agent - Task: EASY
+============================================================
 
-This environment follows production-grade design principles:
+Step 1: sender@example.com - Check our amazing offer!
+  → {'is_spam': True}
+  Reward: 1.000
 
-1. **Type Safety**: Pydantic models enforced throughout
-2. **Meaningful Rewards**: Graduated penalties, not binary feedback
-3. **Modularity**: Separate concerns (environment, models, grading)
-4. **Testability**: Comprehensive unit tests with 100% API coverage
-5. **Documentation**: Clear docstrings and examples
-6. **Reproducibility**: Seed support for deterministic episodes
+Step 2: boss@company.com - Urgent: Meeting tomorrow
+  → {'is_spam': False}
+  Reward: 1.000
+
+===== RESULTS =====
+Total Reward: 2.000
+Steps: 2
+Average Reward: 1.000
+====================
+
+===== TASK SCORES =====
+easy     : 2.000
+medium   : 1.800
+hard     : 1.200
+======================
+```
+
+## Project Structure
+
+```
+email-openenv/
+├── env/
+│   ├── environment.py      # Core EmailEnv implementation
+│   ├── models.py          # Pydantic data models
+│   └── __init__.py
+├── graders/
+│   ├── easy_grader.py     # Spam classification reward function
+│   ├── medium_grader.py   # Priority classification reward function
+│   ├── hard_grader.py     # Reply generation reward function
+│   └── __init__.py
+├── baseline/
+│   ├── run_agent.py       # OpenAI-based baseline agent
+│   ├── mock_agent.py      # Heuristic baseline agent
+│   └── README.md
+├── data/
+│   └── emails.json        # Email dataset with labels
+├── tests/
+│   ├── test_environment.py
+│   └── test_graders.py
+└── README.md
+```
+
+## Tech Stack
+
+- **Python 3.8+**: Core language
+- **OpenAI API**: LLM for baseline agent
+- **Pydantic**: Data validation and models
+- **Gym/RL**: Environment design pattern
+
+## Key Design Principles
+
+1. **Modularity**: Graders are independent, task-agnostic environment
+2. **Realism**: Real email patterns and multi-factor scoring
+3. **Extensibility**: Easy to add new tasks or graders
+4. **Clarity**: Simple code, readable logic, minimal abstractions
+
+## Future Improvements
+
+- **Larger Datasets**: Scale to 10k+ realistic emails
+- **Multi-Turn Interactions**: Support conversation threads
+- **Better Prompting**: Few-shot examples for baseline agent
+- **Custom Graders**: User-defined reward functions
+- **Web Interface**: Dashboard for agent monitoring
+- **Benchmarking**: Standard suite of evaluation metrics
 
 ## License
 
-MIT
+Open source.
