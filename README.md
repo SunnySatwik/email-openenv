@@ -175,7 +175,28 @@ python baseline/mock_agent.py --task hard --max-steps 10
 
 ### OpenAI Agent
 
-Set your API key:
+**Option 1: Using .env file (Recommended)**
+
+Create a `.env` file in the project root:
+```bash
+cp .env.example .env
+```
+
+Then edit `.env` and add your API key:
+```
+OPENAI_API_KEY=sk-your-api-key-here
+```
+
+Run agent:
+```bash
+python baseline/run_agent.py --task easy
+python baseline/run_agent.py --task hard --max-steps 10
+python baseline/run_agent.py --task all --max-steps 5
+```
+
+**Option 2: Using environment variable**
+
+Set API key directly:
 ```bash
 # macOS/Linux
 export OPENAI_API_KEY="sk-..."
@@ -184,13 +205,9 @@ export OPENAI_API_KEY="sk-..."
 set OPENAI_API_KEY=sk-...
 ```
 
-Run agent:
+Then run:
 ```bash
 python baseline/run_agent.py --task easy
-python baseline/run_agent.py --task hard --max-steps 10
-
-# Run all tasks and compare scores
-python baseline/run_agent.py --task all --max-steps 5
 ```
 
 ### Output Example

@@ -10,8 +10,10 @@ import os
 import sys
 from typing import Literal
 
+from dotenv import load_dotenv
 from openai import OpenAI
-
+# Load environment variables from .env file
+load_dotenv()
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from env import EmailEnv
@@ -100,15 +102,21 @@ def generate_action(client: OpenAI, observation, task: str) -> dict:
 
 def run_agent(task: Literal["easy", "medium", "hard"] = "easy", max_steps: int = 5):
     """Run the baseline agent on the specified task."""
+    
+
+    # Try to get API key from environment or .env file
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
         raise ValueError(
-            "OPENAI_API_KEY environment variable not set. "
-            "Please set it to your OpenAI API key."
+            "OPENAI_API_KEY not found.\n"
+            "Please either:\n"
+            "  1. Set environment variable: export OPENAI_API_KEY='sk-...'\n"
+            "  2. Create .env file with: OPENAI_API_KEY=sk-...\n"
+            "  3. See .env.example for template"
         )
 
     client = OpenAI(api_key=api_key)
-
+    print("API KEY LOADED:", api_key[:5] if api_key else "None")
     print(f"\n{'='*60}")
     print(f"OpenEnv Baseline Agent - Task: {task.upper()}")
     print(f"{'='*60}\n")
