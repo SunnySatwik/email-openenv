@@ -119,7 +119,30 @@ class EmailEnv:
 
         # Get current email and grade the action
         email = self.emails[self.current_email_idx]
-        reward = self._calculate_reward(action, email)
+
+        # Calculate reward by calling appropriate external grader
+        if not email.true_label:
+            reward = 0.5
+        elif self.task == "easy":
+            reward = easy_grader.grade(
+                action.get("is_spam", False),
+                email.true_label.get("spam", False),
+            )
+        elif self.task == "medium":
+            reward = medium_grader.grade(
+                action.get("priority", "low"),
+                email.true_label.get("priority", "low"),
+            )
+        elif self.task == "hard":
+            reward = hard_grader.grade(
+                action.get("reply_text", ""),
+                action.get("should_reply", True),
+                email.true_label.get("suggested_reply"),
+                email.true_label.get("reply_required", False),
+            )
+        else:
+            raise ValueError(f"Unknown task: {self.task}")
+
         self.episode_rewards.append(reward)
 
         # Move to next email
@@ -178,40 +201,6 @@ class EmailEnv:
             "total_emails": len(self.emails),
             "is_done": self.current_email_idx >= len(self.emails) or self.step_count >= self.max_steps,
         }
-
-    def _calculate_reward(self, action: dict, email: Email) -> float:
-        """
-        Calculate reward by delegating to task-specific grader.
-
-        Args:
-            action: Action taken by agent
-            email: Email that was processed
-
-        Returns:
-            Reward in range [0, 1]
-        """
-        if not email.true_label:
-            return 0.5  # No ground truth available
-
-        if self.task == "easy":
-            return easy_grader.grade(
-                action.get("is_spam", False),
-                email.true_label.get("spam", False),
-            )
-        elif self.task == "medium":
-            return medium_grader.grade(
-                action.get("priority", "low"),
-                email.true_label.get("priority", "low"),
-            )
-        elif self.task == "hard":
-            return hard_grader.grade(
-                action.get("reply_text", ""),
-                action.get("should_reply", True),
-                email.true_label.get("suggested_reply"),
-                email.true_label.get("reply_required", False),
-            )
-        else:
-            raise ValueError(f"Unknown task: {self.task}")
 
     def _get_action_type(self, action: dict) -> str:
         """Determine the type of action from its structure."""
