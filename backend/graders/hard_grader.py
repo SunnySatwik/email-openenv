@@ -65,50 +65,56 @@ def _has_polite_tone(reply: str) -> float:
 # ----------------------------
 
 def grade_hard(action, email):
-    """
-    Weighted scoring:
-    - Decision correctness: 0.5
-    - Content relevance: 0.3
-    - Response quality: 0.2
-    """
 
-    subject, body, reply_required = _extract_email_fields(email)
+    if not action or not isinstance(action, dict):
+        return 0.0
+
+    if isinstance(email, dict):
+        subject = email.get("subject", "")
+        body = email.get("body", "")
+        reply_required = email.get("true_label", {}).get("reply_required", False)
+    else:
+        subject = email.subject
+        body = email.body
+        reply_required = email.true_label.get("reply_required", False)
+
     email_text = subject + " " + body
 
     reply_text = action.get("reply_text", "")
     should_reply = bool(action.get("should_reply", False))
 
-    # Component 1: Decision correctness (0.5)
-    decision_correct = should_reply == reply_required
-
-    if not decision_correct:
+    # 🚨 HARD RULE: wrong decision = 0
+    if should_reply != reply_required:
         return 0.0
-    decision_score = 1.0 if decision_correct else 0.0
 
-    # Component 2: Content relevance (0.3)
+    # Decision score
+    decision_score = 1.0
+
+    # Relevance
     relevance_score = 0.0
+    if should_reply and reply_text.strip():
+        overlap = len(set(reply_text.lower().split()) & set(email_text.lower().split()))
+        relevance_score = min(1.0, overlap / 10)
 
-    if should_reply:
-        if reply_text.strip():  # only if reply exists
-            raw_overlap = _calculate_keyword_overlap(reply_text, email_text)
-
-            if raw_overlap == 0:
-                relevance_score = 0.2
-            else:
-                relevance_score = min(1.0, raw_overlap * 1.5)
-    # Component 3: Response quality (0.2)
+    # Quality
     quality_score = 0.0
     if should_reply and len(reply_text.strip()) >= 10:
-        quality_score = 0.5 + _has_polite_tone(reply_text) * 0.5
+        quality_score = 1.0
 
-    # Final score (NO penalties or bonuses)
+    # Base score
     total_score = (
         decision_score * 0.5 +
         relevance_score * 0.3 +
         quality_score * 0.2
     )
+    # 🔥 Small boost for minimal but valid replies
+    if should_reply and reply_text.strip() and len(reply_text.strip()) < 10:
+        total_score += 0.05
+    # 🔥 ONLY penalize completely broken responses
+    if should_reply and reply_text is None:
+        total_score -= 0.1
 
-    return min(1.0, total_score)
+    return max(0.0, min(1.0, total_score))
 
 
 # ----------------------------

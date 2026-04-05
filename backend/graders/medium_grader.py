@@ -1,9 +1,3 @@
-"""
-Priority classification grader for the medium task.
-
-Evaluates priority classification with distance-based scoring and keyword detection.
-"""
-
 PRIORITY_LEVELS = {"low": 0, "medium": 1, "high": 2, "urgent": 3}
 
 URGENT_KEYWORDS = {"urgent", "asap", "emergency", "critical", "immediately", "now"}
@@ -21,25 +15,12 @@ def _extract_text(email):
     return (subject + " " + body).lower()
 
 
-def _detect_priority_from_content(email):
-    text = _extract_text(email)
-
-    if any(keyword in text for keyword in URGENT_KEYWORDS):
-        return "urgent"
-    elif any(keyword in text for keyword in HIGH_KEYWORDS):
-        return "high"
-    elif any(keyword in text for keyword in MEDIUM_KEYWORDS):
-        return "medium"
-
-    return None
-
-
 def grade_medium(action, email):
-    """
-    Distance-based priority grading with keyword-based reasoning bonus.
-    """
+    # 🔥 PENALTY: invalid action
+    if not action or not isinstance(action, dict):
+        return 0.0
 
-    # Extract ground truth safely
+    # Extract ground truth
     if isinstance(email, dict):
         ground_truth = email.get("true_label", {}).get("priority", "low")
     else:
@@ -57,7 +38,7 @@ def grade_medium(action, email):
 
     distance = abs(pred_level - true_level)
 
-    # Base score (distance)
+    # Base score
     if distance == 0:
         base_score = 1.0
     elif distance == 1:
@@ -67,16 +48,14 @@ def grade_medium(action, email):
     else:
         base_score = 0.0
 
-    # 🔥 Bonus: keyword-based reasoning
+    # 🔥 PENALTY: nonsense prediction
+    if prediction not in ["low", "medium", "high", "urgent"]:
+        base_score -= 0.2
 
-    return base_score
+    return max(0.0, min(1.0, base_score))
+
+
 def grade(action, email):
-    """
-    Wrapper for compatibility with tests.
-    Accepts either:
-    - string ("low", "medium", etc.)
-    - dict {"priority": string}
-    """
     if isinstance(action, str):
         action = {"priority": action}
     return grade_medium(action, email)
