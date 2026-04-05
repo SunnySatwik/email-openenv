@@ -12,7 +12,9 @@ from pathlib import Path
 from typing import Literal, Tuple, Optional
 
 from .models import Email, Observation, StepInfo
-from backend.graders import easy_grader, medium_grader, hard_grader
+from graders.easy_grader import grade_easy
+from graders.medium_grader import grade_medium
+from graders.hard_grader import grade_hard
 
 
 class EmailEnv:
@@ -124,17 +126,17 @@ class EmailEnv:
         if not email.true_label:
             reward = 0.5
         elif self.task == "easy":
-            reward = easy_grader.grade_easy(
+            reward = grade_easy(
                 action,
                 email,
             )
         elif self.task == "medium":
-            reward = medium_grader.grade_medium(
+            reward = grade_medium(
                 action,
                 email,
             )
         elif self.task == "hard":
-            reward = hard_grader.grade_hard(
+            reward = grade_hard(
                 action,
                 email,
             )

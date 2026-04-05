@@ -1,4 +1,4 @@
-from backend.env.models import Email
+from env.models import Email
 
 SPAM_INDICATORS = {"free", "win", "offer", "click", "limited", "act now", "urgent"}
 
