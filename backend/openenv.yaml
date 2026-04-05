@@ -1,0 +1,11 @@
+name: email-assistant-env
+version: 0.1.0
+
+entrypoint: env.environment:EmailEnv
+
+tasks:
+  - easy
+  - medium
+  - hard
+
+description: OpenEnv environment for email triage (spam, priority, reply)
