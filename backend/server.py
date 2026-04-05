@@ -10,14 +10,14 @@ from dotenv import load_dotenv
 
 from openai import OpenAI
 
-from env import EmailEnv
-from env.models import Email, Observation
+from backend.env import EmailEnv
+from backend.env.models import Email, Observation
 
-from graders.easy_grader import grade_easy
-from graders.medium_grader import grade_medium
-from graders.hard_grader import grade_hard
+from backend.graders.easy_grader import grade_easy
+from backend.graders.medium_grader import grade_medium
+from backend.graders.hard_grader import grade_hard
 
-from baseline.run_agent import generate_action
+from backend.baseline.run_agent import generate_action
 
 # Load environment variables
 load_dotenv()

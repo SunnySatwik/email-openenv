@@ -1,0 +1,14 @@
+.git
+.gitignore
+node_modules
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.env
+venv
+.env.*
+*.log
+frontend
+Dockerfile
+README.md

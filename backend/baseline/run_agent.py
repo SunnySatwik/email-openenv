@@ -16,7 +16,7 @@ from openai import OpenAI
 load_dotenv()
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from env import EmailEnv
+from backend.env import EmailEnv
 
 
 def get_action_schema(task: Literal["easy", "medium", "hard"]) -> str:
