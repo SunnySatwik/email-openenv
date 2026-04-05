@@ -1,17 +1,9 @@
-"""
-Spam classification grader for the easy task.
+from backend.env.models import Email
 
-Evaluates spam classification with graduated rewards for reasonable mistakes.
-"""
-
-from env.models import Email
-
-# Keywords that indicate promotional/spam-like content
 SPAM_INDICATORS = {"free", "win", "offer", "click", "limited", "act now", "urgent"}
 
 
 def _has_spam_characteristics(email: Email) -> bool:
-    """Check if email has promotional/spam-like keywords."""
     if isinstance(email, dict):
         subject = email.get("subject", "")
         body = email.get("body", "")
@@ -24,11 +16,11 @@ def _has_spam_characteristics(email: Email) -> bool:
 
 
 def grade_easy(action, email):
-    """
-    Calculate reward for spam classification with partial credit.
-    """
 
-    # Handle dict vs object
+    # 🔥 PENALTY: invalid action
+    if not action or not isinstance(action, dict):
+        return 0.0
+
     if isinstance(email, dict):
         subject = email.get("subject", "")
         body = email.get("body", "")
@@ -38,16 +30,11 @@ def grade_easy(action, email):
         body = email.body
         ground_truth = email.true_label.get("spam", False)
 
-    text = (subject + " " + body).lower()
-
-    spam_keywords = ["free", "win", "offer", "click", "prize"]
     has_spammy_features = _has_spam_characteristics(email)
 
-    # Extract prediction correctly
     prediction = bool(action.get("is_spam", False))
     ground_truth = bool(ground_truth)
 
-    # ✅ Correct prediction FIRST
     if prediction == ground_truth:
         return 1.0
 
@@ -55,13 +42,9 @@ def grade_easy(action, email):
         return 0.5
 
     return 0.0
+
+
 def grade(action, email):
-    """
-    Wrapper for compatibility with tests.
-    Accepts either:
-    - bool (True/False)
-    - dict {"is_spam": bool}
-    """
     if isinstance(action, bool):
         action = {"is_spam": action}
     return grade_easy(action, email)
