@@ -5,7 +5,7 @@ Tests the core OpenEnv interface and environment behavior.
 """
 
 import pytest
-from env import EmailEnv, Email, Observation, StepInfo
+from env import EmailEnv, Email, Observation, StepInfo, Reward
 
 
 class TestEmailEnvInitialization:
@@ -97,7 +97,7 @@ class TestStepInterface:
         obs, reward, done, info = env.step({"is_spam": False})
 
         assert isinstance(obs, Observation)
-        assert isinstance(reward, (int, float))
+        assert isinstance(reward, Reward)
         assert isinstance(done, bool)
         assert isinstance(info, StepInfo)
 
@@ -199,14 +199,14 @@ class TestTaskSpecificBehavior:
         env = EmailEnv(task="easy")
         env.reset()
         _, reward, _, info = env.step({"is_spam": True})
-        assert 0 <= reward <= 1
+        assert 0 <= reward.value <= 1
 
     def test_medium_task_action_type(self):
         """Medium task should handle priority."""
         env = EmailEnv(task="medium")
         env.reset()
         _, reward, _, info = env.step({"priority": "high"})
-        assert 0 <= reward <= 1
+        assert 0 <= reward.value <= 1
 
     def test_hard_task_action_type(self):
         """Hard task should handle reply generation."""
@@ -216,7 +216,7 @@ class TestTaskSpecificBehavior:
             "reply_text": "Thanks for your email",
             "should_reply": True,
         })
-        assert 0 <= reward <= 1
+        assert 0 <= reward.value <= 1
 
 
 class TestEmailData:

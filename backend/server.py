@@ -8,8 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
 
-from openai import OpenAI
-
 from backend.env import EmailEnv
 from backend.env.models import Email, Observation
 
@@ -19,11 +17,19 @@ from backend.graders.hard_grader import grade_hard
 
 from backend.baseline.run_agent import generate_action
 
+def get_client():
+    from openai import OpenAI
+    import os
+
+    api_key = os.getenv("OPENAI_API_KEY")
+    base_url = os.getenv("API_BASE_URL")
+
+    if not api_key:
+        return None
+
+    return OpenAI(api_key=api_key, base_url=base_url)
 # Load environment variables
 load_dotenv()
-
-# Initialize OpenAI client
-client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 app = FastAPI(title="Email OpenEnv API")
 
@@ -78,9 +84,17 @@ class RunResponse(BaseModel):
 async def run_agent_once(observation: Observation, task: str):
     start = time.perf_counter()
 
+    client = get_client()
+
     try:
-        from baseline.mock_agent import generate_mock_action
-        action = generate_mock_action(observation, task)
+        if client:
+            # ✅ Use OpenAI via your existing agent logic
+            action = generate_action(client, observation, task)
+        else:
+            # ✅ fallback to mock agent
+            from backend.baseline.mock_agent import generate_mock_action
+            action = generate_mock_action(observation, task)
+
     except Exception as e:
         action = {"error": str(e)}
 
@@ -138,8 +152,9 @@ async def run_episode(req: RunRequest):
 
         try:
             next_obs, env_reward, done, _ = env.step(action)
+            reward_value = env_reward.value  # Extract value from Reward object
         except Exception:
-            env_reward = 0.0
+            reward_value = 0.0
             done = True
             next_obs = observation
 
@@ -148,12 +163,12 @@ async def run_episode(req: RunRequest):
                 step=step + 1,
                 email_id=getattr(observation.email, "id", str(step)),
                 action=action,
-                reward=env_reward,
+                reward=reward_value,
                 latency_ms=latency
             )
         )
 
-        total_reward += env_reward
+        total_reward += reward_value
         observation = next_obs
 
         if done:

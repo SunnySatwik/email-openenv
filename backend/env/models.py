@@ -4,7 +4,7 @@ Pydantic models for the email environment.
 Defines data contracts for observations, actions, and email data.
 """
 
-from typing import Optional
+from typing import Optional, Union
 from pydantic import BaseModel, Field
 
 
@@ -19,10 +19,7 @@ class Email(BaseModel):
 
 
 class Observation(BaseModel):
-    """Observation returned by the environment.
-
-    Contains the current email to process and metadata about the episode.
-    """
+    """Observation returned by the environment."""
     email: Email = Field(..., description="Current email to process")
     step_count: int = Field(default=0, description="Current step in the episode")
     task: str = Field(..., description="Task type: 'easy', 'medium', or 'hard'")
@@ -54,6 +51,12 @@ class ReplyAction(BaseModel):
     )
 
 
+class Reward(BaseModel):
+    """Reward returned by the environment."""
+    value: float = Field(..., ge=0.0, le=1.0, description="Reward score between 0 and 1")
+    explanation: Optional[str] = Field(default=None, description="Optional explanation of reward")
+
+
 class StepInfo(BaseModel):
     """Additional information returned with each step."""
     task: str = Field(..., description="Task type")
@@ -62,11 +65,21 @@ class StepInfo(BaseModel):
     action_type: str = Field(..., description="Type of action taken")
 
 
+# Union Action type for OpenEnv compliance
+Action = Union[
+    SpamClassificationAction,
+    PriorityAction,
+    ReplyAction
+]
+
+
 __all__ = [
     "Email",
     "Observation",
     "SpamClassificationAction",
     "PriorityAction",
     "ReplyAction",
+    "Reward",
     "StepInfo",
+    "Action",
 ]

@@ -8,6 +8,8 @@ from .models import (
     PriorityAction,
     ReplyAction,
     StepInfo,
+    Reward,
+    Action,
 )
 
 __all__ = [
@@ -18,4 +20,6 @@ __all__ = [
     "PriorityAction",
     "ReplyAction",
     "StepInfo",
+    "Reward",
+    "Action",
 ]

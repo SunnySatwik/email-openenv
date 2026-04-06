@@ -31,7 +31,7 @@ def example_easy_task():
 
         obs, reward, done, info = env.step(action)
         print(f"  Action: is_spam={action['is_spam']}")
-        print(f"  Reward: {reward:.2f}")
+        print(f"  Reward: {reward.value:.2f}")
         print(f"  Ground Truth: {info.ground_truth}\n")
 
         if done:
@@ -73,7 +73,7 @@ def example_medium_task():
 
         obs, reward, done, info = env.step(action)
         print(f"  Action: priority={action['priority']}")
-        print(f"  Reward: {reward:.2f}")
+        print(f"  Reward: {reward.value:.2f}")
         print(f"  Ground Truth: {info.ground_truth}\n")
 
         if done:
@@ -119,7 +119,7 @@ def example_hard_task():
         obs, reward, done, info = env.step(action)
         print(f"  Should Reply: {action['should_reply']}")
         print(f"  Reply: {action['reply_text'][:50]}...")
-        print(f"  Reward: {reward:.2f}")
+        print(f"  Reward: {reward.value:.2f}")
         print(f"  Ground Truth: {info.ground_truth}\n")
 
         if done:

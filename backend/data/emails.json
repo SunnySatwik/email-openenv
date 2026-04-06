@@ -1,67 +1,82 @@
 [
   {
-    "id": "email_001",
-    "sender": "john.doe@company.com",
-    "subject": "Meeting tomorrow at 2pm",
-    "body": "Hi, I wanted to confirm our meeting tomorrow at 2pm to discuss Q2 planning. Please let me know if this works for you.",
+    "id": "email_101",
+    "sender": "hr@company.com",
+    "subject": "Meeting rescheduled to 3 PM",
+    "body": "Hi, the team meeting has been moved to 3 PM today. Please confirm your availability.",
     "timestamp": "2024-03-27T09:30:00Z",
-    "true_label": {
-      "spam": false,
-      "priority": "high",
-      "reply_required": true,
-      "suggested_reply": "Thanks for confirming. Yes, 2pm works well for me. See you tomorrow."
-    }
+    "true_label": { "spam": false, "priority": "high", "reply_required": true }
   },
   {
-    "id": "email_002",
-    "sender": "no-reply@promotions.com",
-    "subject": "EXCLUSIVE OFFER: 50% OFF NOW!",
-    "body": "Dear valued customer, THIS IS NOT A DRILL! Get 50% off everything! Click here to claim your deal NOW! Limited time offer!",
-    "timestamp": "2024-03-27T08:15:00Z",
-    "true_label": {
-      "spam": true,
-      "priority": "low",
-      "reply_required": false,
-      "suggested_reply": null
-    }
+    "id": "email_102",
+    "sender": "promo@dealsmart.com",
+    "subject": "Limited Time Offer – Get 70% OFF",
+    "body": "Hurry! Click now to claim your exclusive discount. Offer ends today!",
+    "timestamp": "2024-03-27T10:00:00Z",
+    "true_label": { "spam": true, "priority": "low", "reply_required": false }
   },
   {
-    "id": "email_003",
-    "sender": "sarah.smith@company.com",
-    "subject": "Report feedback",
-    "body": "I reviewed the quarterly report you sent. Great work overall, but I have a few suggestions on the financial section. Can we discuss this week?",
-    "timestamp": "2024-03-27T10:45:00Z",
-    "true_label": {
-      "spam": false,
-      "priority": "high",
-      "reply_required": true,
-      "suggested_reply": "Thanks for reviewing! I'd love to discuss your suggestions. How about Wednesday at 3pm?"
-    }
+    "id": "email_103",
+    "sender": "it-support@company.com",
+    "subject": "URGENT: Password Reset Required",
+    "body": "Your account may be compromised. Please reset your password immediately using the link below.",
+    "timestamp": "2024-03-27T10:15:00Z",
+    "true_label": { "spam": false, "priority": "urgent", "reply_required": true }
   },
   {
-    "id": "email_004",
-    "sender": "noreply@newsletter.org",
-    "subject": "Your weekly digest",
-    "body": "This week in tech: New updates on AI, Cloud computing, and Web3. Read our latest articles at our website.",
-    "timestamp": "2024-03-27T07:00:00Z",
-    "true_label": {
-      "spam": false,
-      "priority": "low",
-      "reply_required": false,
-      "suggested_reply": null
-    }
+    "id": "email_104",
+    "sender": "security@secure-login.com",
+    "subject": "Action Required: Verify Your Account",
+    "body": "We detected unusual activity. Click this link to verify your account credentials immediately.",
+    "timestamp": "2024-03-27T11:00:00Z",
+    "true_label": { "spam": true, "priority": "high", "reply_required": false }
   },
   {
-    "id": "email_005",
+    "id": "email_105",
     "sender": "manager@company.com",
-    "subject": "Action required: Budget approval",
-    "body": "The Q2 budget needs your approval by end of day Friday. Please review the attached document and confirm.",
-    "timestamp": "2024-03-27T11:20:00Z",
-    "true_label": {
-      "spam": false,
-      "priority": "urgent",
-      "reply_required": true,
-      "suggested_reply": "Will review and get back to you by EOD Friday."
-    }
+    "subject": "Project deadline extended",
+    "body": "The deadline has been extended to next Friday. No immediate action needed.",
+    "timestamp": "2024-03-27T11:30:00Z",
+    "true_label": { "spam": false, "priority": "medium", "reply_required": false }
+  },
+  {
+    "id": "email_106",
+    "sender": "newsletter@techworld.com",
+    "subject": "Top AI Trends This Week",
+    "body": "Check out the latest updates in AI, including new model releases and breakthroughs.",
+    "timestamp": "2024-03-27T12:00:00Z",
+    "true_label": { "spam": false, "priority": "low", "reply_required": false }
+  },
+  {
+    "id": "email_107",
+    "sender": "lottery@winbig.com",
+    "subject": "You Won a Prize!",
+    "body": "Congratulations! You have been selected as a winner. Claim your reward now.",
+    "timestamp": "2024-03-27T12:30:00Z",
+    "true_label": { "spam": true, "priority": "low", "reply_required": false }
+  },
+  {
+    "id": "email_108",
+    "sender": "colleague@company.com",
+    "subject": "Can you review this document?",
+    "body": "Hey, could you please review the attached file and share your feedback?",
+    "timestamp": "2024-03-27T13:00:00Z",
+    "true_label": { "spam": false, "priority": "medium", "reply_required": true }
+  },
+  {
+    "id": "email_109",
+    "sender": "finance@company.com",
+    "subject": "Invoice Payment Reminder",
+    "body": "This is a reminder that your invoice is due tomorrow. Please process the payment.",
+    "timestamp": "2024-03-27T13:30:00Z",
+    "true_label": { "spam": false, "priority": "high", "reply_required": true }
+  },
+  {
+    "id": "email_110",
+    "sender": "offers@shoppinghub.com",
+    "subject": "Act Now – Exclusive Deals Await",
+    "body": "Don’t miss out! Click here to grab exciting deals before they expire.",
+    "timestamp": "2024-03-27T14:00:00Z",
+    "true_label": { "spam": true, "priority": "low", "reply_required": false }
   }
 ]

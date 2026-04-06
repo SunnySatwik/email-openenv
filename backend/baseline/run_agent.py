@@ -137,9 +137,9 @@ def run_agent(task: Literal["easy", "medium", "hard"] = "easy", max_steps: int =
 
         try:
             observation, reward, done, info = env.step(action)
-            step_rewards.append(reward)
-            total_reward += reward
-            print(f"  Reward: {reward:.3f}\n")
+            step_rewards.append(reward.value)
+            total_reward += reward.value
+            print(f"  Reward: {reward.value:.3f}\n")
 
             if done:
                 break

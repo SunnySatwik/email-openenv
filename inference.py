@@ -1,18 +1,50 @@
 import os
 import time
+import json
 from openai import OpenAI
 from dotenv import load_dotenv
 from backend.env import EmailEnv
+
 load_dotenv()
+
 # ENV VARIABLES
 API_KEY = os.getenv("OPENAI_API_KEY")
-BASE_URL = os.getenv("API_BASE_URL", None)
+BASE_URL = os.getenv("API_BASE_URL")
 MODEL = os.getenv("MODEL_NAME", "gpt-4o-mini")
 
 client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
 
 
-import json
+def safe_json_parse(content):
+    try:
+        return json.loads(content)
+    except:
+        content = content.strip().replace("```json", "").replace("```", "")
+        try:
+            return json.loads(content)
+        except:
+            return None
+
+
+def fallback_action(email_text, task):
+    if task == "easy":
+        return {"is_spam": "free" in email_text or "offer" in email_text}
+
+    elif task == "medium":
+        if "urgent" in email_text:
+            return {"priority": "urgent"}
+        elif "meeting" in email_text:
+            return {"priority": "high"}
+        return {"priority": "low"}
+
+    elif task == "hard":
+        return {
+            "should_reply": "?" in email_text or "please" in email_text,
+            "reply_text": "Thank you for your email. I will get back to you shortly."
+        }
+
+    return {}
+
 
 def generate_action(email_text, task):
     prompt = f"""
@@ -43,40 +75,24 @@ For hard:
         )
 
         content = response.choices[0].message.content
+        parsed = safe_json_parse(content)
 
-        try:
-            return json.loads(content)
-        except:
-            return {}
+        if parsed:
+            return parsed
 
-    except Exception as e:
-        print("[WARNING] OpenAI failed, using fallback mock agent")
+        return fallback_action(email_text, task)
 
-        # 🔥 fallback
-        if task == "easy":
-            return {"is_spam": "free" in email_text or "offer" in email_text}
-        elif task == "medium":
-            if "urgent" in email_text:
-                return {"priority": "urgent"}
-            elif "meeting" in email_text:
-                return {"priority": "high"}
-            return {"priority": "low"}
-        elif task == "hard":
-            return {
-                "should_reply": "?" in email_text or "please" in email_text,
-                "reply_text": "Thank you for your email. I will get back to you shortly."
-            }
-
-        return {}
+    except Exception:
+        return fallback_action(email_text, task)
 
 
 def run_task(task):
     env = EmailEnv(task=task, max_steps=5)
     obs = env.reset()
 
-    print(f"[START] Task={task}")
+    print(f"[START] task={task}")
 
-    total_reward = 0
+    total_reward = 0.0
     step = 0
 
     while True:
@@ -91,16 +107,21 @@ def run_task(task):
 
         obs, reward, done, _ = env.step(action)
 
-        total_reward += reward
+        total_reward += reward.value
 
-        print(f"[STEP] {step} action={action} reward={reward:.3f} latency_ms={latency:.2f}")
+        print(
+            f"[STEP] step={step} action={action} reward={reward.value:.3f} latency_ms={latency:.2f}"
+        )
 
         if done:
             break
 
-    print(f"[END] total_reward={total_reward:.3f}\n")
+    print(f"[END] total_reward={total_reward:.3f}")
 
 
 if __name__ == "__main__":
+    if not API_KEY:
+        raise ValueError("OPENAI_API_KEY not set")
+
     for task in ["easy", "medium", "hard"]:
         run_task(task)

@@ -17,10 +17,11 @@ def _has_spam_characteristics(email: Email) -> bool:
 
 def grade_easy(action, email):
 
-    # 🔥 PENALTY: invalid action
+    # Invalid action
     if not action or not isinstance(action, dict):
         return 0.0
 
+    # Extract fields
     if isinstance(email, dict):
         subject = email.get("subject", "")
         body = email.get("body", "")
@@ -30,17 +31,20 @@ def grade_easy(action, email):
         body = email.body
         ground_truth = email.true_label.get("spam", False)
 
-    has_spammy_features = _has_spam_characteristics(email)
-
     prediction = bool(action.get("is_spam", False))
     ground_truth = bool(ground_truth)
 
+    # ✅ Exact match
     if prediction == ground_truth:
         return 1.0
 
-    if has_spammy_features:
+    # ✅ Partial credit ONLY if:
+    # - ground truth is spam
+    # - and email clearly has spam indicators
+    if ground_truth and _has_spam_characteristics(email):
         return 0.5
 
+    # ❌ Otherwise wrong
     return 0.0
 
 

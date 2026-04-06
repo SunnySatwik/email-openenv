@@ -1,0 +1,11 @@
+Metadata-Version: 2.4
+Name: email-openenv
+Version: 0.1.0
+Summary: OpenEnv Email Assistant Environment
+Author: Sunny Satwik
+Requires-Dist: pydantic
+Requires-Dist: fastapi
+Requires-Dist: uvicorn
+Requires-Dist: openai
+Requires-Dist: python-dotenv
+Requires-Dist: openenv-core>=0.2.0

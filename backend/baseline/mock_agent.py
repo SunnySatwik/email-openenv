@@ -132,9 +132,10 @@ def run_mock_agent(task: Literal["easy", "medium", "hard"] = "easy", max_steps: 
             # Execute action
             observation, reward, done, info = env.step(action)
 
-            step_rewards.append(reward)
-            total_reward += reward
-            print(f"  Reward: {reward:.3f}")
+            reward_value = reward.value  # Extract value from Reward object
+            step_rewards.append(reward_value)
+            total_reward += reward_value
+            print(f"  Reward: {reward_value:.3f}")
             print()
 
             if done:
