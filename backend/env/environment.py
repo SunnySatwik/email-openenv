@@ -12,9 +12,9 @@ from pathlib import Path
 from typing import Literal, Tuple, Optional
 
 from .models import Email, Observation, StepInfo
-from graders.easy_grader import grade_easy
-from graders.medium_grader import grade_medium
-from graders.hard_grader import grade_hard
+from backend.graders.easy_grader import grade_easy
+from backend.graders.medium_grader import grade_medium
+from backend.graders.hard_grader import grade_hard
 
 
 class EmailEnv:
