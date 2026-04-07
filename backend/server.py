@@ -182,7 +182,9 @@ async def run_episode(req: RunRequest):
         total_reward=total_reward,
         average_reward=avg_reward
     )
-
+@app.get("/")
+def root():
+    return {"status": "ok"}
 
 # ----------------------------
 # Run server
