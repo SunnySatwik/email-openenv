@@ -243,7 +243,16 @@ async def run_episode(req: RunRequest):
 
 @app.get("/", response_class=HTMLResponse)
 def root():
-    return "<h1>Email OpenEnv Assistant Running ✅</h1>"
+    return """
+    <h1>📧 Email OpenEnv Assistant</h1>
+    <p>Your environment is running successfully ✅</p>
+    <p>Available endpoints:</p>
+    <ul>
+        <li><b>/run</b> - Run full task episode</li>
+        <li><b>/compare</b> - Test single email</li>
+    </ul>
+    <p>Use Postman / curl / Swagger to interact.</p>
+    """
 
 
 # ----------------------------
