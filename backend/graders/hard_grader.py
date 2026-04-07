@@ -1,36 +1,33 @@
 """
-Robust reply generation grader (FINAL VERSION)
+Final Hard Grader (Smart + Test-Compatible)
 
-Key Features:
-- No dependency on broken/missing true_label
-- Spam-aware decision logic
-- Smooth scoring (not binary)
-- Works with or without OpenAI
+- Uses true_label for correctness (required by tests)
+- Keeps soft scoring for relevance + quality
+- Stable fallback if no API
 """
 
 import os
 import json
 from openai import OpenAI
-from backend.graders.easy_grader import _has_spam_characteristics
 
 MODEL = os.getenv("MODEL_NAME", "gpt-4o-mini")
 
 
 # ----------------------------
-# LLM scoring (safe fallback)
+# Optional LLM scoring
 # ----------------------------
 def _llm_score(email_text, reply_text):
     api_key = os.getenv("OPENAI_API_KEY")
     base_url = os.getenv("API_BASE_URL")
 
     if not api_key:
-        return 0.4, 0.4  # neutral fallback
+        return 0.4, 0.4
 
     try:
         client = OpenAI(api_key=api_key, base_url=base_url)
 
         prompt = f"""
-You are evaluating an email reply.
+Evaluate this email reply.
 
 Email:
 {email_text}
@@ -38,18 +35,14 @@ Email:
 Reply:
 {reply_text}
 
-Score:
-1. relevance (0-1)
-2. quality (0-1)
-
-Return ONLY JSON:
+Return JSON:
 {{"relevance": 0-1, "quality": 0-1}}
 """
 
         response = client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0
+            temperature=0,
         )
 
         content = response.choices[0].message.content.strip()
@@ -59,7 +52,7 @@ Return ONLY JSON:
 
         return (
             min(1.0, float(parsed.get("relevance", 0))),
-            min(1.0, float(parsed.get("quality", 0)))
+            min(1.0, float(parsed.get("quality", 0))),
         )
 
     except Exception:
@@ -68,77 +61,84 @@ Return ONLY JSON:
 
 # ----------------------------
 # MAIN GRADER
-# ---------------------------
-
-
+# ----------------------------
 def grade_hard(action, email):
 
     if not action or not isinstance(action, dict):
         return 0.0
 
-    # Extract email
+    # ----------------------------
+    # Extract email + label
+    # ----------------------------
     if isinstance(email, dict):
         subject = email.get("subject", "")
         body = email.get("body", "")
+        true_label = email.get("true_label", {})
     else:
         subject = email.subject
         body = email.body
+        true_label = email.true_label
 
-    text = (subject + " " + body).lower()
+    reply_required = true_label.get("reply_required", False)
 
     reply_text = action.get("reply_text", "") or ""
     should_reply = bool(action.get("should_reply", False))
 
     # ----------------------------
-    # 🔥 FIXED SPAM LOGIC
+    # ❌ WRONG DECISION
     # ----------------------------
-    spam_keywords = ["buy", "discount", "offer", "sale", "promo"]
-
-    is_spam = any(k in text for k in spam_keywords)
-
-    if is_spam:
-        return 1.0 if not should_reply else 0.0
-
-    # ----------------------------
-    # 🔥 DOES IT NEED REPLY
-    # ----------------------------
-    needs_reply = any(k in text for k in [
-        "?", "please", "help", "need", "request", "asap"
-    ])
-
-    decision_score = 1.0 if should_reply else 0.0 if needs_reply else 1.0
-
-    if not should_reply:
-        return decision_score
-
-    if not reply_text.strip():
+    if should_reply != reply_required:
         return 0.0
 
     # ----------------------------
-    # 🔥 SOFT RELEVANCE (FIXED)
+    # ✅ BASE DECISION SCORE
     # ----------------------------
-    overlap = sum(
-        1 for word in text.split()
-        if word in reply_text.lower()
-    )
+    decision_score = 0.5
 
-    relevance_score = max(0.3, min(overlap / 10, 1.0))  # 👈 FIX
+    # ----------------------------
+    # NO REPLY CASE
+    # ----------------------------
+    if not should_reply:
+        return decision_score
 
-    length_score = min(len(reply_text.split()) / 20, 1.0)
+    # ----------------------------
+    # EMPTY REPLY
+    # ----------------------------
+    if not reply_text.strip():
+        return decision_score
 
-    score = (
-        0.5 * decision_score +
-        0.3 * relevance_score +
-        0.2 * length_score
-    )
+    text = (subject + " " + body).lower()
+    reply = reply_text.lower()
 
-    return max(0.0, min(1.0, score))
+    # ----------------------------
+    # RELEVANCE (0–0.3)
+    # ----------------------------
+    overlap = sum(1 for word in text.split() if word in reply)
+    relevance_score = min(overlap / 8, 1.0) * 0.3
+
+    # ----------------------------
+    # QUALITY (0–0.2)
+    # ----------------------------
+    length = len(reply_text.split())
+
+    if length < 3:
+        quality_score = 0.05
+    elif length < 10:
+        quality_score = 0.15    
+    else:
+        quality_score = 0.2
+
+    return decision_score + relevance_score + quality_score
 
 
+# ----------------------------
+# Wrapper
+# ----------------------------
 def grade(reply_text, should_reply, email):
-    return grade_hard({
-        "reply_text": reply_text,
-        "should_reply": should_reply
-    }, email)
-
-
+    return grade_hard(
+        {
+            "reply_text": reply_text,
+            "should_reply": should_reply,
+        },
+        email,
+    )

@@ -5,7 +5,7 @@ Tests the core OpenEnv interface and environment behavior.
 """
 
 import pytest
-from env import EmailEnv, Email, Observation, StepInfo, Reward
+from backend.env import EmailEnv, Email, Observation, StepInfo, Reward
 
 
 class TestEmailEnvInitialization:

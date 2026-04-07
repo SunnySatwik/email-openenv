@@ -5,8 +5,8 @@ Tests the meaningful reward functions for each external grader task.
 """
 
 import pytest
-from env import Email
-from graders import easy_grader, medium_grader, hard_grader
+from backend.env import Email
+from backend.graders import easy_grader, medium_grader, hard_grader
 
 
 class TestSpamClassificationGrader:

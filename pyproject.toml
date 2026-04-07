@@ -28,3 +28,6 @@ entry_point = "backend.env.environment:EmailEnv"
 [tool.setuptools.packages.find]
 include = ["backend*", "server*"]
 exclude = ["frontend*"]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
