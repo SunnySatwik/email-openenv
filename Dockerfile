@@ -15,6 +15,6 @@ COPY backend ./backend
 # Set Python path
 ENV PYTHONPATH=/app
 
-EXPOSE 8000
+EXPOSE 7860
 
 CMD ["uvicorn", "backend.server:app", "--host", "0.0.0.0", "--port", "8000"]
