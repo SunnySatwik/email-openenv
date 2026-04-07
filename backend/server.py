@@ -109,10 +109,14 @@ async def run_agent_once(observation: Observation, task: str):
         if client:
             action = generate_action(client, observation, task)
         else:
-            from backend.baseline.mock_agent import generate_mock_action
-            action = generate_mock_action(observation, task)
+            raise Exception("No OpenAI client")
+
     except Exception as e:
-        action = {"error": str(e)}
+        print(f"[WARNING] OpenAI failed: {e}")
+
+    # 🔥 ALWAYS FALLBACK
+        from backend.baseline.mock_agent import generate_mock_action
+        action = generate_mock_action(observation, task)
 
     latency = (time.perf_counter() - start) * 1000
 

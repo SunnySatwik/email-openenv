@@ -14,39 +14,51 @@ export default function Page() {
   const [error, setError] = useState(null);
   const [selectedView, setSelectedView] = useState("easy");
   const handleAnalyze = async () => {
-  console.log("HANDLE ANALYZE RUNNING");
+    console.log("HANDLE ANALYZE RUNNING");
 
-  if (!subject.trim() || !body.trim()) {
-    setError('Please enter both email subject and body');
-    return;
-  }
+    if (!subject.trim() || !body.trim()) {
+      setError('Please enter both email subject and body');
+      return;
+    }
 
-  setError(null);
-  setLoading(true);
-  setResult(null);
+    setError(null);
+    setLoading(true);
+    setResult(null);
 
-  try {
-    const tasks = ["easy", "medium", "hard"];
+    try {
+      const tasks = ["easy", "medium", "hard"];
 
-    const results = await Promise.all(
-      tasks.map((t) => compareEmail(t, subject, body))
-    );
+      // Fetch all three task types in parallel
+      const results = await Promise.all(
+        tasks.map((t) => compareEmail(t, subject, body))
+      );
 
-    console.log("RESULTS:", results);
+      console.log("API RESULTS:", results);
 
-    setResult({
-      easy: results[0],
-      medium: results[1],
-      hard: results[2],
-    });
+      // Validate and structure results
+      if (!results || results.length !== 3) {
+        throw new Error("Unexpected API response structure");
+      }
 
-  } catch (err) {
-    console.error(err);
-    setError(err.message || 'An error occurred');
-  } finally {
-    setLoading(false);
-  }
-};
+      // Store results with all three tasks available
+      setResult({
+        easy: results[0] || { action: {}, reward: 0, latency_ms: 0 },
+        medium: results[1] || { action: {}, reward: 0, latency_ms: 0 },
+        hard: results[2] || { action: {}, reward: 0, latency_ms: 0 },
+      });
+
+      // Start with the first selected task view
+      if (!selectedView) {
+        setSelectedView("easy");
+      }
+
+    } catch (err) {
+      console.error("ANALYZE ERROR:", err);
+      setError(err?.message || 'An error occurred during analysis');
+    } finally {
+      setLoading(false);
+    }
+  };
   return (
     <div className="gradient-bg min-h-screen flex flex-col items-center justify-center p-4 sm:p-6 lg:p-8 overflow-hidden">
       {/* Background grid effect */}
