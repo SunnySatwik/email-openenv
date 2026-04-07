@@ -7,7 +7,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 from dotenv import load_dotenv
-
+from fastapi.responses import HTMLResponse
 from backend.env import EmailEnv
 from backend.env.models import Email, Observation
 
@@ -187,13 +187,18 @@ async def run_episode(req: RunRequest):
         total_reward=total_reward,
         average_reward=avg_reward
     )
-@app.get("/")
+@app.get("/", response_class=HTMLResponse)
 def root():
-    return {
-        "status": "ok",
-        "message": "Email OpenEnv running",
-        "docs": "/docs"
-    }
+    return """
+    <h1>📧 Email OpenEnv Assistant</h1>
+    <p>Your environment is running successfully ✅</p>
+    <p>Available endpoints:</p>
+    <ul>
+        <li><b>/run</b> - Run full task episode</li>
+        <li><b>/compare</b> - Test single email</li>
+    </ul>
+    <p>Use Postman / curl / Swagger to interact.</p>
+    """
 # ----------------------------
 # Run server
 # ----------------------------
