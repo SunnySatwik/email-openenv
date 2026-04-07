@@ -1,30 +1,21 @@
-"""
-Robust reply generation grader (hard task)
-
-Fixes:
-- Spam override (never reply to spam)
-- Ignores bad ground truth for spam
-- Safe fallback without OpenAI
-- Deterministic scoring
-"""
-
 import os
 import json
 from openai import OpenAI
 from backend.graders.easy_grader import _has_spam_characteristics
 
-
 MODEL = os.getenv("MODEL_NAME", "gpt-4o-mini")
 
 
-# ----------------------------
-# LLM scoring (SAFE)
-# ----------------------------
 def _llm_score(email_text, reply_text):
+    import os
+    import json
+    from openai import OpenAI
+
     api_key = os.getenv("OPENAI_API_KEY")
     base_url = os.getenv("API_BASE_URL")
+    model = os.getenv("MODEL_NAME", "gpt-4o-mini")
 
-    # 🔥 No API → fallback
+    # 🔥 If no API key → fallback immediately
     if not api_key:
         return 0.3, 0.3
 
@@ -32,12 +23,9 @@ def _llm_score(email_text, reply_text):
         client = OpenAI(api_key=api_key, base_url=base_url)
 
         prompt = f"""
-You are a STRICT evaluator.
+You are a strict evaluator.
 
-IMPORTANT:
-- If the email is promotional or spam → replying is BAD
-- Penalize generic replies
-- Reward only relevant, useful replies
+Evaluate the quality of an email reply.
 
 Email:
 {email_text}
@@ -50,12 +38,14 @@ Return ONLY JSON:
 """
 
         response = client.chat.completions.create(
-            model=MODEL,
+            model=model,
             messages=[{"role": "user", "content": prompt}],
             temperature=0
         )
 
         content = response.choices[0].message.content.strip()
+
+        # Clean markdown
         content = content.replace("```json", "").replace("```", "")
 
         parsed = json.loads(content)
@@ -69,15 +59,11 @@ Return ONLY JSON:
         return 0.3, 0.3
 
 
-# ----------------------------
-# MAIN GRADER
-# ----------------------------
 def grade_hard(action, email):
 
     if not action or not isinstance(action, dict):
         return 0.0
 
-    # Extract email
     if isinstance(email, dict):
         subject = email.get("subject", "")
         body = email.get("body", "")
@@ -87,74 +73,42 @@ def grade_hard(action, email):
         body = email.body
         reply_required = email.true_label.get("reply_required", False)
 
-    email_text = (subject + " " + body).lower()
+    email_text = subject + " " + body
 
-    reply_text = action.get("reply_text", "") or ""
+    reply_text = action.get("reply_text", "")
     should_reply = bool(action.get("should_reply", False))
 
-    # =========================================================
-    # 🔥 STEP 1: HARD SPAM OVERRIDE (THIS FIXES YOUR BUG)
-    # =========================================================
+    # 🔥 STEP 1: SPAM OVERRIDE (VERY IMPORTANT)
     is_spam = _has_spam_characteristics(email)
 
     if is_spam:
-        # ❌ replying to spam = ALWAYS WRONG
         if should_reply:
-            return 0.0
-        # ✅ ignoring spam = ALWAYS CORRECT
-        return 1.0
+            return 0.0   # replying to spam = bad
+        else:
+            return 1.0   # ignoring spam = correct
 
-    # =========================================================
-    # 🔥 STEP 2: Decision correctness
-    # =========================================================
+    # 🚨 STEP 2: Decision correctness
     if should_reply != reply_required:
         return 0.0
 
-    # =========================================================
-    # 🔥 STEP 3: If no reply needed → full score
-    # =========================================================
-    if not should_reply:
-        return 1.0
+    # Decision score
+    decision_score = 1.0
 
-    # =========================================================
-    # 🔥 STEP 4: Basic sanity checks
-    # =========================================================
-    if not reply_text.strip():
-        return 0.0
+    # LLM scoring
+    relevance_score, quality_score = (0.0, 0.0)
 
-    # Penalize useless generic replies
-    generic_phrases = [
-        "thank you for your email",
-        "i will get back to you",
-        "best regards"
-    ]
+    if should_reply and reply_text.strip():
+        relevance_score, quality_score = _llm_score(email_text, reply_text)
 
-    generic_penalty = any(p in reply_text.lower() for p in generic_phrases)
-
-    # =========================================================
-    # 🔥 STEP 5: LLM scoring (optional)
-    # =========================================================
-    relevance_score, quality_score = _llm_score(email_text, reply_text)
-
-    # =========================================================
-    # 🔥 STEP 6: Final scoring
-    # =========================================================
-    score = (
-        0.5 +                 # correct decision
-        0.3 * relevance_score +
-        0.2 * quality_score
+    # Final weighted score
+    total_score = (
+        decision_score * 0.5 +
+        relevance_score * 0.3 +
+        quality_score * 0.2
     )
 
-    # Penalize generic replies
-    if generic_penalty:
-        score -= 0.2
+    return max(0.0, min(1.0, total_score))
 
-    return max(0.0, min(1.0, score))
-
-
-# ----------------------------
-# Wrapper (for compatibility)
-# ----------------------------
 def grade(reply_text, should_reply, email):
     action = {
         "reply_text": reply_text,
