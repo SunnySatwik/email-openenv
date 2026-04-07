@@ -1,3 +1,13 @@
+---
+title: Email OpenEnv Assistant
+emoji: 📧
+colorFrom: blue
+colorTo: purple
+sdk: docker
+app_file: app.py
+pinned: false
+---
+
 # 📧 Email OpenEnv Assistant
 
 > **AI Agent Evaluation Environment for Email Management Tasks**
