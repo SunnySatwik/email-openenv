@@ -31,7 +31,12 @@ def get_client():
 # Load environment variables
 load_dotenv()
 
-app = FastAPI(title="Email OpenEnv API")
+app = FastAPI(
+    title="Email OpenEnv API",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json"
+)
 
 # Enable CORS (for frontend later)
 app.add_middleware(
@@ -184,8 +189,11 @@ async def run_episode(req: RunRequest):
     )
 @app.get("/")
 def root():
-    return {"status": "ok"}
-
+    return {
+        "status": "ok",
+        "message": "Email OpenEnv running",
+        "docs": "/docs"
+    }
 # ----------------------------
 # Run server
 # ----------------------------
