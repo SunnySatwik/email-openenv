@@ -82,32 +82,27 @@ def grade_hard(action, email):
         subject = email.subject
         body = email.body
 
-    email_text = (subject + " " + body).lower()
+    text = (subject + " " + body).lower()
 
     reply_text = action.get("reply_text", "") or ""
     should_reply = bool(action.get("should_reply", False))
 
     # ----------------------------
-    # 🔥 STEP 1: SPAM HANDLING
+    # 🔥 STEP 1: SPAM
     # ----------------------------
-    is_spam = _has_spam_characteristics(email)
-
-    if is_spam:
-        if should_reply:
-            return 0.0  # replying to spam is bad
-        return 1.0      # ignoring spam is perfect
+    if _has_spam_characteristics(email):
+        return 1.0 if not should_reply else 0.0
 
     # ----------------------------
-    # 🔥 STEP 2: DECISION QUALITY (NOT STRICT)
+    # 🔥 STEP 2: DOES IT NEED REPLY?
     # ----------------------------
-    decision_score = 0.0
-
-    # Heuristic: emails with questions or requests → likely need reply
-    needs_reply_signal = any(word in email_text for word in [
-        "?", "please", "can you", "could you", "help", "request"
+    needs_reply = any(k in text for k in [
+        "?", "urgent", "asap", "please", "help", "request"
     ])
 
-    if needs_reply_signal:
+    decision_score = 0.0
+
+    if needs_reply:
         decision_score = 1.0 if should_reply else 0.0
     else:
         decision_score = 1.0 if not should_reply else 0.5
@@ -119,41 +114,37 @@ def grade_hard(action, email):
         return decision_score
 
     # ----------------------------
-    # 🔥 STEP 4: INVALID REPLY
+    # 🔥 STEP 4: REPLY QUALITY
     # ----------------------------
     if not reply_text.strip():
         return 0.0
 
-    # ----------------------------
-    # 🔥 STEP 5: GENERIC PENALTY
-    # ----------------------------
-    generic_phrases = [
-        "thank you for your email",
-        "i will get back to you",
-        "best regards",
-        "we will respond shortly"
-    ]
+    length_score = min(len(reply_text.split()) / 20, 1.0)
 
-    generic_penalty = any(p in reply_text.lower() for p in generic_phrases)
+    relevance_score = 0.0
+    for word in text.split():
+        if word in reply_text.lower():
+            relevance_score += 1
+
+    relevance_score = min(relevance_score / 10, 1.0)
 
     # ----------------------------
-    # 🔥 STEP 6: LLM SCORING
-    # ----------------------------
-    relevance_score, quality_score = _llm_score(email_text, reply_text)
-
-    # ----------------------------
-    # 🔥 STEP 7: FINAL SCORE
+    # 🔥 FINAL SCORE
     # ----------------------------
     score = (
-        0.4 * decision_score +
-        0.35 * relevance_score +
-        0.25 * quality_score
+        0.5 * decision_score +
+        0.3 * relevance_score +
+        0.2 * length_score
     )
 
-    if generic_penalty:
-        score -= 0.2
-
     return max(0.0, min(1.0, score))
+
+
+def grade(reply_text, should_reply, email):
+    return grade_hard({
+        "reply_text": reply_text,
+        "should_reply": should_reply
+    }, email)
 
 
 # ----------------------------
