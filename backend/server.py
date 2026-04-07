@@ -32,17 +32,10 @@ def get_client():
     return OpenAI(api_key=api_key, base_url=base_url)
 
 
-# Load env
 load_dotenv()
 
-app = FastAPI(
-    title="Email OpenEnv API",
-    docs_url="/docs",
-    redoc_url="/redoc",
-    openapi_url="/openapi.json"
-)
+app = FastAPI()
 
-# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -51,9 +44,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# ----------------------------
-# GLOBAL ENV (for step/reset)
-# ----------------------------
 env_instance = None
 
 
@@ -113,42 +103,35 @@ async def run_agent_once(observation: Observation, task: str):
 
     except Exception as e:
         print(f"[WARNING] OpenAI failed: {e}")
-
-    # 🔥 ALWAYS FALLBACK
         from backend.baseline.mock_agent import generate_mock_action
         action = generate_mock_action(observation, task)
 
     latency = (time.perf_counter() - start) * 1000
 
-    if "error" not in action:
-        if task == "easy":
-            reward = grade_easy(action, observation.email)
-        elif task == "medium":
-            reward = grade_medium(action, observation.email)
-        else:
-            reward = grade_hard(action, observation.email)
+    # ✅ ALWAYS use YOUR graders
+    if task == "easy":
+        reward = grade_easy(action, observation.email)
+    elif task == "medium":
+        reward = grade_medium(action, observation.email)
     else:
-        reward = 0.0
+        reward = grade_hard(action, observation.email)
 
     return action, reward, latency
 
 
 # ----------------------------
-# NEW: RESET (IMPORTANT)
+# RESET
 # ----------------------------
 
 @app.post("/reset")
 def reset(task: str = "easy"):
     global env_instance
-
     env_instance = EmailEnv(task=task, max_steps=5)
-    obs = env_instance.reset()
-
-    return obs
+    return env_instance.reset()
 
 
 # ----------------------------
-# NEW: STEP (IMPORTANT)
+# STEP (FIXED)
 # ----------------------------
 
 @app.post("/step")
@@ -158,36 +141,26 @@ def step(req: StepRequest):
     if env_instance is None:
         return {"error": "Call /reset first"}
 
-    try:
-        obs, reward, done, info = env_instance.step(req.action)
+    obs, _, done, info = env_instance.step(req.action)
 
-        return {
-            "observation": obs,
-            "reward": reward.value,
-            "done": done,
-            "info": info
-        }
+    # 🔥 USE YOUR GRADERS (NOT env_reward)
+    if env_instance.task == "easy":
+        reward_value = grade_easy(req.action, obs.email)
+    elif env_instance.task == "medium":
+        reward_value = grade_medium(req.action, obs.email)
+    else:
+        reward_value = grade_hard(req.action, obs.email)
 
-    except Exception as e:
-        return {"error": str(e)}
-
-
-# ----------------------------
-# NEW: STATE (OPTIONAL but good)
-# ----------------------------
-
-@app.get("/state")
-def state():
-    global env_instance
-
-    if env_instance is None:
-        return {"error": "No active environment"}
-
-    return env_instance.state()
+    return {
+        "observation": obs,
+        "reward": reward_value,
+        "done": done,
+        "info": info
+    }
 
 
 # ----------------------------
-# EXISTING: Compare
+# COMPARE
 # ----------------------------
 
 @app.post("/compare", response_model=CompareResult)
@@ -208,7 +181,7 @@ async def compare(req: CompareRequest):
 
 
 # ----------------------------
-# EXISTING: Run
+# RUN (FIXED)
 # ----------------------------
 
 @app.post("/run", response_model=RunResponse)
@@ -220,11 +193,19 @@ async def run_episode(req: RunRequest):
     total_reward = 0.0
 
     for step in range(req.max_steps):
-        action, reward, latency = await run_agent_once(observation, req.task)
+        action, _, latency = await run_agent_once(observation, req.task)
 
         try:
-            next_obs, env_reward, done, _ = env.step(action)
-            reward_value = env_reward.value
+            next_obs, _, done, _ = env.step(action)
+
+            # 🔥 USE YOUR GRADER HERE
+            if req.task == "easy":
+                reward_value = grade_easy(action, observation.email)
+            elif req.task == "medium":
+                reward_value = grade_medium(action, observation.email)
+            else:
+                reward_value = grade_hard(action, observation.email)
+
         except Exception:
             reward_value = 0.0
             done = True
@@ -257,28 +238,18 @@ async def run_episode(req: RunRequest):
 
 
 # ----------------------------
-# Root
+# ROOT
 # ----------------------------
 
 @app.get("/", response_class=HTMLResponse)
 def root():
-    return """
-    <h1>📧 Email OpenEnv Assistant</h1>
-    <p>Environment is running ✅</p>
-    <p><b>New:</b> Supports external agents via /reset + /step</p>
-    <ul>
-        <li>/run - baseline agent</li>
-        <li>/compare - single email</li>
-        <li>/reset - start environment</li>
-        <li>/step - send action</li>
-    </ul>
-    """
+    return "<h1>Email OpenEnv Assistant Running ✅</h1>"
 
 
 # ----------------------------
-# Run
+# RUN SERVER
 # ----------------------------
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
+    uvicorn.run("server:app", host="0.0.0.0", port=8000)
