@@ -68,7 +68,9 @@ Return ONLY JSON:
 
 # ----------------------------
 # MAIN GRADER
-# ----------------------------
+# ---------------------------
+
+
 def grade_hard(action, email):
 
     if not action or not isinstance(action, dict):
@@ -88,49 +90,42 @@ def grade_hard(action, email):
     should_reply = bool(action.get("should_reply", False))
 
     # ----------------------------
-    # 🔥 STEP 1: SPAM
+    # 🔥 FIXED SPAM LOGIC
     # ----------------------------
-    if _has_spam_characteristics(email):
+    spam_keywords = ["buy", "discount", "offer", "sale", "promo"]
+
+    is_spam = any(k in text for k in spam_keywords)
+
+    if is_spam:
         return 1.0 if not should_reply else 0.0
 
     # ----------------------------
-    # 🔥 STEP 2: DOES IT NEED REPLY?
+    # 🔥 DOES IT NEED REPLY
     # ----------------------------
     needs_reply = any(k in text for k in [
-        "?", "urgent", "asap", "please", "help", "request"
+        "?", "please", "help", "need", "request", "asap"
     ])
 
-    decision_score = 0.0
+    decision_score = 1.0 if should_reply else 0.0 if needs_reply else 1.0
 
-    if needs_reply:
-        decision_score = 1.0 if should_reply else 0.0
-    else:
-        decision_score = 1.0 if not should_reply else 0.5
-
-    # ----------------------------
-    # 🔥 STEP 3: NO REPLY CASE
-    # ----------------------------
     if not should_reply:
         return decision_score
 
-    # ----------------------------
-    # 🔥 STEP 4: REPLY QUALITY
-    # ----------------------------
     if not reply_text.strip():
         return 0.0
 
+    # ----------------------------
+    # 🔥 SOFT RELEVANCE (FIXED)
+    # ----------------------------
+    overlap = sum(
+        1 for word in text.split()
+        if word in reply_text.lower()
+    )
+
+    relevance_score = max(0.3, min(overlap / 10, 1.0))  # 👈 FIX
+
     length_score = min(len(reply_text.split()) / 20, 1.0)
 
-    relevance_score = 0.0
-    for word in text.split():
-        if word in reply_text.lower():
-            relevance_score += 1
-
-    relevance_score = min(relevance_score / 10, 1.0)
-
-    # ----------------------------
-    # 🔥 FINAL SCORE
-    # ----------------------------
     score = (
         0.5 * decision_score +
         0.3 * relevance_score +
@@ -147,11 +142,3 @@ def grade(reply_text, should_reply, email):
     }, email)
 
 
-# ----------------------------
-# Wrapper
-# ----------------------------
-def grade(reply_text, should_reply, email):
-    return grade_hard({
-        "reply_text": reply_text,
-        "should_reply": should_reply
-    }, email)
