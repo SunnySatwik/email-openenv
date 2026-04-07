@@ -1,13 +1,13 @@
 import os
 import time
-import asyncio
 from typing import List, Literal
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import HTMLResponse
 from pydantic import BaseModel
 from dotenv import load_dotenv
-from fastapi.responses import HTMLResponse
+
 from backend.env import EmailEnv
 from backend.env.models import Email, Observation
 
@@ -17,9 +17,11 @@ from backend.graders.hard_grader import grade_hard
 
 from backend.baseline.run_agent import generate_action
 
+# ----------------------------
+# OpenAI client (lazy)
+# ----------------------------
 def get_client():
     from openai import OpenAI
-    import os
 
     api_key = os.getenv("OPENAI_API_KEY")
     base_url = os.getenv("API_BASE_URL")
@@ -28,7 +30,9 @@ def get_client():
         return None
 
     return OpenAI(api_key=api_key, base_url=base_url)
-# Load environment variables
+
+
+# Load env
 load_dotenv()
 
 app = FastAPI(
@@ -38,7 +42,7 @@ app = FastAPI(
     openapi_url="/openapi.json"
 )
 
-# Enable CORS (for frontend later)
+# CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -48,7 +52,13 @@ app.add_middleware(
 )
 
 # ----------------------------
-# Request / Response Models
+# GLOBAL ENV (for step/reset)
+# ----------------------------
+env_instance = None
+
+
+# ----------------------------
+# Models
 # ----------------------------
 
 class CompareRequest(BaseModel):
@@ -67,6 +77,10 @@ class RunRequest(BaseModel):
     max_steps: int = 5
 
 
+class StepRequest(BaseModel):
+    action: dict
+
+
 class StepResult(BaseModel):
     step: int
     email_id: str
@@ -83,7 +97,7 @@ class RunResponse(BaseModel):
 
 
 # ----------------------------
-# Helper: Run agent
+# Agent execution
 # ----------------------------
 
 async def run_agent_once(observation: Observation, task: str):
@@ -93,19 +107,15 @@ async def run_agent_once(observation: Observation, task: str):
 
     try:
         if client:
-            # ✅ Use OpenAI via your existing agent logic
             action = generate_action(client, observation, task)
         else:
-            # ✅ fallback to mock agent
             from backend.baseline.mock_agent import generate_mock_action
             action = generate_mock_action(observation, task)
-
     except Exception as e:
         action = {"error": str(e)}
 
     latency = (time.perf_counter() - start) * 1000
 
-    # Grading
     if "error" not in action:
         if task == "easy":
             reward = grade_easy(action, observation.email)
@@ -120,7 +130,60 @@ async def run_agent_once(observation: Observation, task: str):
 
 
 # ----------------------------
-# Endpoint: Compare (single step)
+# NEW: RESET (IMPORTANT)
+# ----------------------------
+
+@app.post("/reset")
+def reset(task: str = "easy"):
+    global env_instance
+
+    env_instance = EmailEnv(task=task, max_steps=5)
+    obs = env_instance.reset()
+
+    return obs
+
+
+# ----------------------------
+# NEW: STEP (IMPORTANT)
+# ----------------------------
+
+@app.post("/step")
+def step(req: StepRequest):
+    global env_instance
+
+    if env_instance is None:
+        return {"error": "Call /reset first"}
+
+    try:
+        obs, reward, done, info = env_instance.step(req.action)
+
+        return {
+            "observation": obs,
+            "reward": reward.value,
+            "done": done,
+            "info": info
+        }
+
+    except Exception as e:
+        return {"error": str(e)}
+
+
+# ----------------------------
+# NEW: STATE (OPTIONAL but good)
+# ----------------------------
+
+@app.get("/state")
+def state():
+    global env_instance
+
+    if env_instance is None:
+        return {"error": "No active environment"}
+
+    return env_instance.state()
+
+
+# ----------------------------
+# EXISTING: Compare
 # ----------------------------
 
 @app.post("/compare", response_model=CompareResult)
@@ -141,7 +204,7 @@ async def compare(req: CompareRequest):
 
 
 # ----------------------------
-# Endpoint: Run full episode
+# EXISTING: Run
 # ----------------------------
 
 @app.post("/run", response_model=RunResponse)
@@ -157,7 +220,7 @@ async def run_episode(req: RunRequest):
 
         try:
             next_obs, env_reward, done, _ = env.step(action)
-            reward_value = env_reward.value  # Extract value from Reward object
+            reward_value = env_reward.value
         except Exception:
             reward_value = 0.0
             done = True
@@ -187,23 +250,31 @@ async def run_episode(req: RunRequest):
         total_reward=total_reward,
         average_reward=avg_reward
     )
+
+
+# ----------------------------
+# Root
+# ----------------------------
+
 @app.get("/", response_class=HTMLResponse)
 def root():
     return """
     <h1>📧 Email OpenEnv Assistant</h1>
-    <p>Your environment is running successfully ✅</p>
-    <p>Available endpoints:</p>
+    <p>Environment is running ✅</p>
+    <p><b>New:</b> Supports external agents via /reset + /step</p>
     <ul>
-        <li><b>/run</b> - Run full task episode</li>
-        <li><b>/compare</b> - Test single email</li>
+        <li>/run - baseline agent</li>
+        <li>/compare - single email</li>
+        <li>/reset - start environment</li>
+        <li>/step - send action</li>
     </ul>
-    <p>Use Postman / curl / Swagger to interact.</p>
     """
+
+
 # ----------------------------
-# Run serverYes
+# Run
 # ----------------------------
 
 if __name__ == "__main__":
     import uvicorn
-
     uvicorn.run("server:app", host="0.0.0.0", port=8000, reload=True)
