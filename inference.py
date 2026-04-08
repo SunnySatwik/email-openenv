@@ -2,22 +2,18 @@ import os
 import time
 import json
 from openai import OpenAI
-from dotenv import load_dotenv
 from backend.env import EmailEnv
 
-load_dotenv()
-
-API_KEY = os.getenv("OPENAI_API_KEY")
+# 🔥 REQUIRED ENV VARIABLES (from validator)
+API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 BASE_URL = os.getenv("API_BASE_URL")
 MODEL = os.getenv("MODEL_NAME", "gpt-4o-mini")
 
-# ✅ SAFE CLIENT CREATION
-client = None
-if API_KEY:
-    try:
-        client = OpenAI(api_key=API_KEY, base_url=BASE_URL)
-    except Exception:
-        client = None
+# ✅ ALWAYS initialize client (no guards)
+client = OpenAI(
+    api_key=API_KEY,
+    base_url=BASE_URL
+)
 
 
 def safe_json_parse(content):
@@ -58,11 +54,9 @@ def fallback_action(email_text, task):
 
 
 def generate_action(email_text, task):
-    # ✅ fallback if no client
-    if client is None:
-        return fallback_action(email_text, task)
-
     prompt = f"""
+You are an AI email assistant.
+
 Task: {task}
 
 Email:
@@ -72,6 +66,7 @@ Return ONLY JSON.
 """
 
     try:
+        # 🔥 MUST HIT PROXY
         response = client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
@@ -84,10 +79,10 @@ Return ONLY JSON.
         if parsed:
             return parsed
 
-        return fallback_action(email_text, task)
-
     except Exception:
-        return fallback_action(email_text, task)
+        pass  # fallback below
+
+    return fallback_action(email_text, task)
 
 
 def run_task(task):
@@ -99,41 +94,47 @@ def run_task(task):
     rewards = []
     step = 0
 
-    while True:
-        step += 1
+    try:
+        while True:
+            step += 1
 
-        email = obs.email
-        email_text = email.subject + " " + email.body
+            email = obs.email
+            email_text = email.subject + " " + email.body
 
-        start = time.time()
-        action = generate_action(email_text, task)
-        latency = (time.time() - start) * 1000
+            action = generate_action(email_text, task)
 
-        try:
-            obs, reward, done, _ = env.step(action)
-            reward_val = reward.value
-            error = None
-        except Exception as e:
-            reward_val = 0.0
-            done = True
-            error = str(e)
+            try:
+                obs, reward, done, _ = env.step(action)
+                reward_val = reward.value
+                error = None
+            except Exception as e:
+                reward_val = 0.0
+                done = True
+                error = str(e)
 
-        rewards.append(reward_val)
+            rewards.append(reward_val)
+
+            print(
+                f"[STEP] step={step} action={action} reward={reward_val:.2f} done={str(done).lower()} error={error or 'null'}",
+                flush=True
+            )
+
+            if done:
+                break
+
+        score = sum(rewards) / len(rewards) if rewards else 0.0
 
         print(
-            f"[STEP] step={step} action={action} reward={reward_val:.2f} done={str(done).lower()} error={error or 'null'}",
+            f"[END] success={str(score > 0.1).lower()} steps={len(rewards)} score={score:.2f} rewards={','.join(f'{r:.2f}' for r in rewards)}",
             flush=True
         )
 
-        if done:
-            break
-
-    score = sum(rewards) / len(rewards) if rewards else 0.0
-
-    print(
-        f"[END] success={str(score > 0.1).lower()} steps={len(rewards)} score={score:.2f} rewards={','.join(f'{r:.2f}' for r in rewards)}",
-        flush=True
-    )
+    except Exception as e:
+        # 🔥 NEVER crash
+        print(
+            f"[END] success=false steps=0 score=0.00 rewards= error={str(e)}",
+            flush=True
+        )
 
 
 if __name__ == "__main__":
