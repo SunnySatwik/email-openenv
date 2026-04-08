@@ -453,15 +453,18 @@ pytest tests/test_graders.py -v
 ### Docker (Local)
 
 ```bash
+# Build image
 docker build -t email-openenv:latest .
 
-docker run -p 8000:8000 \
+# Run container (HF-compatible port)
+docker run -p 7860:7860 \
   -e OPENAI_API_KEY="sk-..." \
-  -e NEXT_PUBLIC_API_URL="http://localhost:8000" \
+  -e API_BASE_URL="https://api.openai.com/v1" \
+  -e MODEL_NAME="gpt-4o-mini" \
   email-openenv:latest
 ```
 
-Access at: `http://localhost:8000`
+Access at: `http://localhost:7860`
 
 ### Hugging Face Spaces
 
