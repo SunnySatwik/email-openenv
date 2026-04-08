@@ -364,7 +364,7 @@ Latency: 287ms
 
 | Layer | Technology | Purpose |
 |-------|-----------|---------|
-| **Frontend** | Next.js 14 | Interactive evaluation dashboard |
+| **Frontend** | Next.js 16 | Interactive evaluation dashboard |
 | **Styling** | Tailwind CSS | Responsive, modern UI |
 | **Backend** | FastAPI | Async REST API |
 | **Language** | Python 3.9+ | Core logic & LLM integration |
