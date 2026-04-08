@@ -134,7 +134,7 @@ Final = decision + relevance + quality   ∈ [0.0, 1.0]
 │  │  POST /run      →  Full episode (multi-step)        │    │
 │  │  POST /reset    →  Initialize new session           │    │
 │  │  POST /step     →  Manual step-by-step control      │    │
-│  └──────────┬───────────────────────┬───────────────────┘   │
+│  └──────────┬───────────────────────┬──────────────────┘    │
 │             │                       │                       │
 │  ┌──────────▼──────┐   ┌────────────▼───────────────┐       │
 │  │  Agent Manager  │   │    EmailEnv Simulator      │       │
@@ -143,15 +143,15 @@ Final = decision + relevance + quality   ∈ [0.0, 1.0]
 │  │  • Groq         │   │  • Seeded reproducibility  │       │
 │  │  • Mock Agent   │   │  • Reward calculation      │       │
 │  └──────────┬──────┘   └────────────┬───────────────┘       │
-│             └──────────────┬─────────┘                      │
+│             └──────────────┬────────┘                       │
 │                  ┌─────────▼────────────────────┐           │
-│                  │      Custom Graders           │          │
-│                  │  easy_grader.py   (spam)      │          │
-│                  │  medium_grader.py (priority)  │          │
-│                  │  hard_grader.py   (reply)     │          │
+│                  │      Custom Graders          │           │
+│                  │  easy_grader.py   (spam)     │           │
+│                  │  medium_grader.py (priority) │           │
+│                  │  hard_grader.py   (reply)    │           │
 │                  └─────────┬────────────────────┘           │
 │                  ┌─────────▼────────────────────┐           │
-│                  │   Email Dataset (emails.json) │          │
+│                  │   Email Dataset (emails.json)│           │
 │                  └──────────────────────────────┘           │
 └─────────────────────────────────────────────────────────────┘
 ```
