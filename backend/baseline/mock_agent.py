@@ -74,17 +74,13 @@ def generate_mock_action(observation: Observation, task: str) -> dict:
 # HARD TASK (REPLY) - IMPROVED
 # -----------------------
     elif task == "hard":
-
-    # ----------------------------
-    # 🔥 STEP 1: SPAM DETECTION
-    # ----------------------------
         spam_keywords = {
         "free", "win", "offer", "click", "discount",
         "buy", "sale", "deal", "promo", "cheap"
     }
 
-    if any(kw in text for kw in spam_keywords):
-        return {
+        if any(kw in text for kw in spam_keywords):
+            return {
             "should_reply": False,
             "reply_text": ""
         }
@@ -92,71 +88,71 @@ def generate_mock_action(observation: Observation, task: str) -> dict:
     # ----------------------------
     # 🔥 STEP 2: INTENT DETECTION
     # ----------------------------
-    needs_reply = any(kw in text for kw in [
+        needs_reply = any(kw in text for kw in [
         "?", "please", "can you", "could you", "help",
         "need", "request", "asap"
     ])
 
-    informational = any(kw in text for kw in [
+        informational = any(kw in text for kw in [
         "fyi", "update", "completed", "done"
     ])
 
-    if informational:
-        return {
+        if informational:
+            return {
             "should_reply": False,
             "reply_text": ""
         }
 
-    if not needs_reply:
-        return {
-            "should_reply": False,
-            "reply_text": ""
-        }
+        if not needs_reply:
+            return {
+                "should_reply": False,
+                "reply_text": ""
+            }
 
     # ----------------------------
     # 🔥 STEP 3: CONTEXTUAL REPLIES
     # ----------------------------
-    reply_text = ""
+        reply_text = ""
 
-    if "meeting" in text:
-        reply_text = (
-            "Thanks for the meeting update. I have noted the schedule and will attend accordingly. "
-            "Please let me know if any preparation is required from my side."
-        )
+        if "meeting" in text:
+            reply_text = (
+                "Thanks for the meeting update. I have noted the schedule and will attend accordingly. "
+                "Please let me know if any preparation is required from my side."
+            )
 
-    elif "server" in text or "down" in text or "issue" in text:
-        reply_text = (
-            "Thanks for flagging the server issue. I understand the urgency and will look into it immediately. "
-            "I will share an update as soon as possible."
-        )
+        elif "server" in text or "down" in text or "issue" in text:
+            reply_text = (
+                "Thanks for flagging the server issue. I understand the urgency and will look into it immediately. "
+                "I will share an update as soon as possible."
+            )
 
-    elif "help" in text:
-        reply_text = (
-            "I understand you need help with this. I will review the details and get back to you shortly with a solution."
-        )
+        elif "help" in text:
+            reply_text = (
+                "I understand you need help with this. I will review the details and get back to you shortly with a solution."
+            )
 
-    elif "review" in text or "document" in text:
-        reply_text = (
-            "Thank you for sharing the document. I will review it carefully and provide my feedback soon."
-        )
+        elif "review" in text or "document" in text:
+            reply_text = (
+                "Thank you for sharing the document. I will review it carefully and provide my feedback soon."
+            )
 
-    elif "deadline" in text:
-        reply_text = (
-            "I acknowledge the deadline mentioned. I will prioritize this task and ensure it is completed on time."
-        )
+        elif "deadline" in text:
+            reply_text = (
+                "I acknowledge the deadline mentioned. I will prioritize this task and ensure it is completed on time."
+            )
 
-    else:
-        # 🔥 SMART DEFAULT (context-aware)
-        key_terms = " ".join(subject.split()[:3])
-        reply_text = (
-            f"Thank you for your email regarding {key_terms}. "
-            "I have noted your request and will get back to you shortly with the necessary updates."
-        )
+        else:
+            # 🔥 SMART DEFAULT (context-aware)
+            key_terms = " ".join(subject.split()[:3])
+            reply_text = (
+                f"Thank you for your email regarding {key_terms}. "
+                "I have noted your request and will get back to you shortly with the necessary updates."
+            )
 
-    return {
-        "should_reply": True,
-        "reply_text": reply_text
-    }
+        return {
+            "should_reply": True,
+            "reply_text": reply_text
+        }
 
 def run_mock_agent(task: Literal["easy", "medium", "hard"] = "easy", max_steps: int = 5):
     """Run the mock agent on the specified task."""

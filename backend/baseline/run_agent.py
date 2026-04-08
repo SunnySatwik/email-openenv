@@ -9,7 +9,7 @@ import json
 import os
 import sys
 from typing import Literal
-
+from backend.baseline.mock_agent import generate_mock_action
 from dotenv import load_dotenv
 from openai import OpenAI
 # Load environment variables from .env file
@@ -95,9 +95,9 @@ def generate_action(client: OpenAI, observation, task: str) -> dict:
                             break
             else:
                 # Give up and return default
-                return defaults[task]
+                return generate_mock_action(observation, task)
 
-    return defaults[task]
+    return generate_mock_action(observation, task)
 
 
 def run_agent(task: Literal["easy", "medium", "hard"] = "easy", max_steps: int = 5):

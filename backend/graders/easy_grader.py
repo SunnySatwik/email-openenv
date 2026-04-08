@@ -41,7 +41,7 @@ def grade_easy(action, email):
     # ✅ Partial credit ONLY if:
     # - ground truth is spam
     # - and email clearly has spam indicators
-    if ground_truth and _has_spam_characteristics(email):
+    if prediction != ground_truth and _has_spam_characteristics(email):
         return 0.5
 
     # ❌ Otherwise wrong

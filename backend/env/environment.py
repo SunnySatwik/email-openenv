@@ -26,17 +26,39 @@ class EmailEnv:
         self.episode_rewards = []
 
     def _load_emails(self):
-        # Replace with your actual loading logic if needed
         return [
             Email(
-                id=str(i),
-                sender="user@test.com",
-                subject="Test email " + str(i),
-                body="This is a test email body",
-                timestamp="2024-01-01T00:00:00",
-                true_label={"spam": False, "priority": "low", "reply_required": True},
-            )
-            for i in range(20)
+                id="1",
+                sender="boss@company.com",
+                subject="URGENT: Server down",
+                body="We need your help ASAP.",
+                timestamp="2024-01-01",
+                true_label={"spam": False, "priority": "urgent", "reply_required": True},
+            ),
+            Email(
+                id="2",
+                sender="newsletter@shop.com",
+                subject="50% discount offer",
+                body="Buy now!",
+                timestamp="2024-01-01",
+                true_label={"spam": True, "priority": "low", "reply_required": False},
+            ),
+            Email(
+                id="3",
+                sender="colleague@company.com",
+                subject="Meeting tomorrow",
+                body="Please confirm availability.",
+                timestamp="2024-01-01",
+                true_label={"spam": False, "priority": "high", "reply_required": True},
+            ),
+            Email(
+                id="4",
+                sender="system@alerts.com",
+                subject="Update completed",
+                body="FYI task done.",
+                timestamp="2024-01-01",
+                true_label={"spam": False, "priority": "low", "reply_required": False},
+            ),
         ]
 
     def reset(self):
