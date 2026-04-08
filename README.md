@@ -118,16 +118,16 @@ Final = decision + relevance + quality   ∈ [0.0, 1.0]
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Email OpenEnv System                      │
+│                    Email OpenEnv System                     │
 ├─────────────────────────────────────────────────────────────┤
-│                                                              │
+│                                                             │
 │  ┌─────────────────────────────────────────────────────┐    │
 │  │          Frontend (Next.js 14 Dashboard)            │    │
 │  │  • Interactive email input                          │    │
 │  │  • Real-time results across all 3 task types        │    │
 │  │  • Reward & latency visualization                   │    │
 │  └──────────────────────┬──────────────────────────────┘    │
-│                         │ HTTP / REST                        │
+│                         │ HTTP / REST                       │
 │  ┌──────────────────────▼──────────────────────────────┐    │
 │  │            FastAPI Backend (Python)                 │    │
 │  │  POST /compare  →  Single email analysis            │    │
@@ -135,7 +135,7 @@ Final = decision + relevance + quality   ∈ [0.0, 1.0]
 │  │  POST /reset    →  Initialize new session           │    │
 │  │  POST /step     →  Manual step-by-step control      │    │
 │  └──────────┬───────────────────────┬───────────────────┘   │
-│             │                       │                        │
+│             │                       │                       │
 │  ┌──────────▼──────┐   ┌────────────▼───────────────┐       │
 │  │  Agent Manager  │   │    EmailEnv Simulator      │       │
 │  │  • OpenAI       │   │  • Gym-style reset/step    │       │
@@ -143,16 +143,16 @@ Final = decision + relevance + quality   ∈ [0.0, 1.0]
 │  │  • Groq         │   │  • Seeded reproducibility  │       │
 │  │  • Mock Agent   │   │  • Reward calculation      │       │
 │  └──────────┬──────┘   └────────────┬───────────────┘       │
-│             └──────────────┬─────────┘                       │
-│                  ┌─────────▼────────────────────┐            │
-│                  │      Custom Graders           │            │
-│                  │  easy_grader.py   (spam)      │            │
-│                  │  medium_grader.py (priority)  │            │
-│                  │  hard_grader.py   (reply)     │            │
-│                  └─────────┬────────────────────┘            │
-│                  ┌─────────▼────────────────────┐            │
-│                  │   Email Dataset (emails.json) │            │
-│                  └──────────────────────────────┘            │
+│             └──────────────┬─────────┘                      │
+│                  ┌─────────▼────────────────────┐           │
+│                  │      Custom Graders           │          │
+│                  │  easy_grader.py   (spam)      │          │
+│                  │  medium_grader.py (priority)  │          │
+│                  │  hard_grader.py   (reply)     │          │
+│                  └─────────┬────────────────────┘           │
+│                  ┌─────────▼────────────────────┐           │
+│                  │   Email Dataset (emails.json) │          │
+│                  └──────────────────────────────┘           │
 └─────────────────────────────────────────────────────────────┘
 ```
 
