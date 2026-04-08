@@ -463,8 +463,12 @@ docker run -p 7860:7860 \
   -e MODEL_NAME="gpt-4o-mini" \
   email-openenv:latest
 ```
+### 🔧 Port Notes
 
-Access at: `http://localhost:7860`
+- Local backend runs on **port 8000**
+- Frontend runs on **port 3000**
+- Docker/Hugging Face uses **port 7860**
+- Hugging Face public URL does **not expose ports**
 
 ### Hugging Face Spaces
 
