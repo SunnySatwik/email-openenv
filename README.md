@@ -7,6 +7,10 @@ sdk: docker
 app_file: app.py
 pinned: false
 ---
+<!--
+⚠️ This block is required for Hugging Face Spaces configuration.
+It is ignored by the app but required for deployment.
+-->
 
 # 📧 Email OpenEnv
 
@@ -101,7 +105,7 @@ Content Relevance     (30% weight)
   Keyword overlap score: min(overlap / 10, 1.0) × 0.3
 
 Response Quality      (20% weight)
-  Reply length ≥ 10 chars           → 0.2
+  Reply length ≥ 10 words + polite tone → 0.2
 
 Final = decision + relevance + quality   ∈ [0.0, 1.0]
 ```
@@ -148,8 +152,6 @@ Final = decision + relevance + quality   ∈ [0.0, 1.0]
 │                  └─────────┬────────────────────┘            │
 │                  ┌─────────▼────────────────────┐            │
 │                  │   Email Dataset (emails.json) │            │
-│                  │   50+ realistic examples      │            │
-│                  │   Ground truth for all tasks  │            │
 │                  └──────────────────────────────┘            │
 └─────────────────────────────────────────────────────────────┘
 ```
@@ -349,8 +351,8 @@ Action:  {
 
 Breakdown:
   Decision correctness  → 1.0 × 0.50 = 0.50
-  Content relevance     → 0.8 × 0.30 = 0.24  (mentions 'review' and 'feedback')
-  Response quality      → 1.0 × 0.20 = 0.20  (reply > 10 chars, professional)
+  Content relevance     → 0.8 × 0.30 = 0.24  (8 of 10 keywords matched: score 8/10 = 0.8, then × 0.3)
+  Response quality      → 1.0 × 0.20 = 0.20  (reply > 10 words, polite/professional tone)
 
 Final Reward: 0.94 ✅
 Latency: 287ms
@@ -432,6 +434,16 @@ python -m backend.baseline.mock_agent --task easy --max-steps 5
 
 # Or run the full environment example
 python -m backend.example_usage
+```
+
+### Test the Environment
+
+```bash
+# Run tests
+pytest tests/ -v
+
+# Run specific test module
+pytest tests/test_graders.py -v
 ```
 
 ---
@@ -518,8 +530,8 @@ def run_my_agent(task: str = "easy", max_steps: int = 5):
     for step in range(max_steps):
         action = generate_my_action(obs, task)
         obs, reward, done, info = env.step(action)
-        total_reward += reward.value
-        print(f"Step {step+1}: {action}  →  reward={reward.value:.2f}")
+        total_reward += reward  # reward is a float in [0.0, 1.0]
+        print(f"Step {step+1}: {action}  →  reward={reward:.2f}")
         if done:
             break
 
@@ -569,8 +581,8 @@ Licensed under the **MIT License** — see [`LICENSE`](LICENSE) for details.
 |---------|------|
 | 🐛 Bug Reports | [GitHub Issues](https://github.com/SunnySatwik/email-openenv/issues) |
 | 💬 Questions | [GitHub Discussions](https://github.com/SunnySatwik/email-openenv/discussions) |
-| 📧 Email (Sunny Satwik) | <!-- add your email here --> |
-| 📧 Email (Soujanya Roy) | <!-- add your email here --> |
+| 📧 Email (Sunny Satwik) | sunny.satwik10@gmail.com |
+| 📧 Email (Soujanya Roy) | amisouja@gmail.com |
 
 ---
 
@@ -590,7 +602,7 @@ Thanks to the tools that made this possible:
 
 <div align="center">
 
-[⭐ Star on GitHub (Sunny)](https://github.com/SunnySatwik/email-openenv) &nbsp;•&nbsp; [⭐ Star on GitHub (Soujanya)](https://github.com/soujo05/email-openenv) &nbsp;•&nbsp; [🤗 Live Demo](https://dante6969-email-openenv.hf.space) &nbsp;•&nbsp; [🚀 Deploy to Spaces](https://huggingface.co/new-space)
+[⭐ Star on GitHub (Sunny)](https://github.com/SunnySatwik/email-openenv) &nbsp;•&nbsp; [🤗 Live Demo](https://dante6969-email-openenv.hf.space) &nbsp;•&nbsp; [🚀 Deploy to Spaces](https://huggingface.co/new-space)
 
 </div>
 
