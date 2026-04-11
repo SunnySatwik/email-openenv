@@ -239,6 +239,10 @@ async def run_episode(req: RunRequest):
 
     avg_reward = total_reward / len(steps) if steps else EPS
 
+    # 🔥 CLAMP BOTH
+    total_reward = safe_score(total_reward / len(steps))  # normalize first
+    avg_reward = safe_score(avg_reward)
+
     return RunResponse(
         task=req.task,
         steps=steps,
