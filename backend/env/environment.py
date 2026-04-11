@@ -91,6 +91,7 @@ class EmailEnv:
         # ----------------------------
         # Compute reward
         # ----------------------------
+
         if self.task == "easy":
             reward_value = grade_easy(action, email)
         elif self.task == "medium":
@@ -98,9 +99,17 @@ class EmailEnv:
         else:
             reward_value = grade_hard(action, email)
 
-        # Clamp reward into (0,1) exclusive
+        # 🔥 GLOBAL SAFETY (FOR ALL TASKS)
         EPS = 1e-6
-        reward_value = max(EPS, min(1.0 - EPS, reward_value))
+
+        try:
+            reward_value = float(reward_value)
+        except:
+            reward_value = EPS
+
+        # FINAL GUARANTEE (validator-safe)
+        if not (0.0 < reward_value < 1.0):
+            reward_value = max(EPS, min(1.0 - EPS, reward_value))
 
         reward = Reward(value=reward_value)
 
