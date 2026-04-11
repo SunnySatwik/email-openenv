@@ -10,10 +10,16 @@ BASE_URL = os.getenv("API_BASE_URL")
 MODEL = os.getenv("MODEL_NAME", "gpt-4o-mini")
 
 # ✅ ALWAYS initialize client (no guards)
-client = OpenAI(
-    api_key=API_KEY,
-    base_url=BASE_URL
-)
+client = None
+
+if API_KEY and BASE_URL:
+    try:
+        client = OpenAI(
+            api_key=API_KEY,
+            base_url=BASE_URL
+        )
+    except Exception:
+        client = None
 
 
 def safe_json_parse(content):
@@ -65,8 +71,12 @@ Email:
 Return ONLY JSON.
 """
 
+    # ✅ If no client (local), use fallback
+    if client is None:
+        return fallback_action(email_text, task)
+
     try:
-        # 🔥 MUST HIT PROXY
+        # 🔥 MUST HIT PROXY (validator will use this)
         response = client.chat.completions.create(
             model=MODEL,
             messages=[{"role": "user", "content": prompt}],
@@ -115,7 +125,7 @@ def run_task(task):
             rewards.append(reward_val)
 
             print(
-                f"[STEP] step={step} action={action} reward={reward_val:.2f} done={str(done).lower()} error={error or 'null'}",
+                f"[STEP] step={step} action={action} reward={reward_val:.6f} done={str(done).lower()} error={error or 'null'}",
                 flush=True
             )
 
@@ -125,7 +135,7 @@ def run_task(task):
         score = sum(rewards) / len(rewards) if rewards else 0.0
 
         print(
-            f"[END] success={str(score > 0.1).lower()} steps={len(rewards)} score={score:.2f} rewards={','.join(f'{r:.2f}' for r in rewards)}",
+            f"[END] success={str(score > 0.1).lower()} steps={len(rewards)} score={score:.6f} rewards={','.join(f'{r:.2f}' for r in rewards)}",
             flush=True
         )
 

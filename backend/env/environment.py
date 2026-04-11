@@ -99,6 +99,10 @@ class EmailEnv:
         else:
             reward_value = grade_hard(action, email)
 
+        # Clamp reward into (0,1) exclusive
+        EPS = 1e-6
+        reward_value = max(EPS, min(1.0 - EPS, reward_value))
+
         reward = Reward(value=reward_value)
 
         # ----------------------------
