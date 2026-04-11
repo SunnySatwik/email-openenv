@@ -20,12 +20,15 @@ from openai import OpenAI
 
 # ── Tunable constants ────────────────────────────────────────────────────────
 
+EPS = 1e-6
+
 WEIGHT_DECISION   = 0.50
 WEIGHT_RELEVANCE  = 0.30
 WEIGHT_QUALITY    = 0.20
 
 # Blend ratio when LLM scoring is available: LLM * BLEND + heuristic * (1 - BLEND)
 LLM_BLEND = 0.70
+
 
 MODEL = os.getenv("MODEL_NAME", "gpt-4o-mini")
 
@@ -105,8 +108,8 @@ def _llm_score(email_text: str, reply_text: str) -> tuple[float, float]:
         parsed = json.loads(content)
 
         return (
-            float(min(1.0, max(0.0, parsed.get("relevance", 0)))),
-            float(min(1.0, max(0.0, parsed.get("quality", 0)))),
+            float(max(EPS, min(1.0 - EPS, parsed.get("relevance", 0)))),
+            float(max(EPS, min(1.0 - EPS, parsed.get("quality", 0)))),
         )
 
     except Exception:
@@ -128,11 +131,11 @@ def _heuristic_relevance(email_text: str, reply_text: str) -> float:
     reply_words = set(re.findall(r"[a-z]+", reply_text.lower()))
 
     if not email_words:
-        return 0.0
+        return EPS
 
     overlap = len(email_words & reply_words)
     # Normalise: full credit at 6+ meaningful overlapping words
-    return min(overlap / 6, 1.0)
+    return max(EPS, min(1.0 - EPS, overlap / 6))
 
 
 def _heuristic_quality(reply_text: str) -> float:
@@ -180,7 +183,7 @@ def _heuristic_quality(reply_text: str) -> float:
     elif sentence_count == 1:
         score += 0.10
 
-    return float(min(1.0, max(0.0, score)))
+    return float(max(EPS, min(1.0 - EPS, score)))
 
 
 # ── Spam guard ───────────────────────────────────────────────────────────────
@@ -211,7 +214,7 @@ def grade_hard(action: dict, email) -> float:
         Reward in [0.0, 1.0]
     """
     if not action or not isinstance(action, dict):
-        return 0.0
+        return EPS
 
     # ── Unpack email ─────────────────────────────────────────────────────────
     if isinstance(email, dict):
@@ -230,11 +233,11 @@ def grade_hard(action: dict, email) -> float:
     # ── Spam guard ────────────────────────────────────────────────────────────
     # Never reward replying to what looks like spam, regardless of true_label
     if should_reply and _looks_like_spam(subject, body):
-        return 0.0
+        return EPS
 
     # ── Decision score ────────────────────────────────────────────────────────
     if should_reply != reply_required:
-        return 0.0
+        return EPS
 
     decision_score = WEIGHT_DECISION  # 0.50
 
@@ -265,7 +268,9 @@ def grade_hard(action: dict, email) -> float:
     relevance_score = relevance * WEIGHT_RELEVANCE  # up to 0.30
     quality_score   = quality   * WEIGHT_QUALITY    # up to 0.20
 
-    return round(decision_score + relevance_score + quality_score, 4)
+    score = decision_score + relevance_score + quality_score
+
+    return max(EPS, min(1.0 - EPS, score))
 
 
 # ── Convenience wrapper ───────────────────────────────────────────────────────

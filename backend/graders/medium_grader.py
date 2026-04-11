@@ -1,5 +1,7 @@
 PRIORITY_LEVELS = {"low": 0, "medium": 1, "high": 2, "urgent": 3}
 
+EPS = 1e-6
+
 URGENT_KEYWORDS = {"urgent", "asap", "emergency", "critical", "immediately", "now"}
 HIGH_KEYWORDS = {"meeting", "deadline", "important", "action required", "attention"}
 MEDIUM_KEYWORDS = {"follow up", "review", "approval", "update"}
@@ -18,7 +20,7 @@ def _extract_text(email):
 def grade_medium(action, email):
     # 🔥 PENALTY: invalid action
     if not action or not isinstance(action, dict):
-        return 0.0
+        return EPS
 
     # Extract ground truth
     if isinstance(email, dict):
@@ -31,7 +33,7 @@ def grade_medium(action, email):
 
     # Invalid labels
     if prediction not in PRIORITY_LEVELS or ground_truth not in PRIORITY_LEVELS:
-        return 0.0
+        return EPS
 
     pred_level = PRIORITY_LEVELS[prediction]
     true_level = PRIORITY_LEVELS[ground_truth]
@@ -40,19 +42,19 @@ def grade_medium(action, email):
 
     # Base score
     if distance == 0:
-        base_score = 1.0
+        base_score = 1.0 - EPS
     elif distance == 1:
         base_score = 0.6
     elif distance == 2:
         base_score = 0.3
     else:
-        base_score = 0.0
+        base_score = EPS
 
     # 🔥 PENALTY: nonsense prediction
     if prediction not in ["low", "medium", "high", "urgent"]:
         base_score -= 0.2
 
-    return max(0.0, min(1.0, base_score))
+    return max(EPS, min(1.0 - EPS, base_score))
 
 
 def grade(action, email):
