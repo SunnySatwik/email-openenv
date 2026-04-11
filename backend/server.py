@@ -17,6 +17,16 @@ from backend.graders.hard_grader import grade_hard
 
 from backend.baseline.run_agent import generate_action
 
+# ────────────────────────────────────────────────────────────────────────────
+# Safety wrapper for scores
+# ────────────────────────────────────────────────────────────────────────────
+
+EPS = 1e-6
+
+def safe_score(x):
+    """Ensure reward is strictly in (0, 1)."""
+    return max(EPS, min(1.0 - EPS, float(x)))
+
 # ----------------------------
 # OpenAI client (lazy)
 # ----------------------------
@@ -116,7 +126,7 @@ async def run_agent_once(observation: Observation, task: str):
     else:
         reward = grade_hard(action, observation.email)
 
-    return action, reward, latency
+    return action, safe_score(reward), latency
 
 
 # ----------------------------
@@ -153,7 +163,7 @@ def step(req: StepRequest):
 
     return {
         "observation": obs,
-        "reward": reward_value,
+        "reward": safe_score(reward_value),
         "done": done,
         "info": info
     }
@@ -207,7 +217,7 @@ async def run_episode(req: RunRequest):
                 reward_value = grade_hard(action, observation.email)
 
         except Exception:
-            reward_value = 0.0
+            reward_value = EPS
             done = True
             next_obs = observation
 
@@ -216,18 +226,18 @@ async def run_episode(req: RunRequest):
                 step=step + 1,
                 email_id=getattr(observation.email, "id", str(step)),
                 action=action,
-                reward=reward_value,
+                reward=safe_score(reward_value),
                 latency_ms=latency
             )
         )
 
-        total_reward += reward_value
+        total_reward += safe_score(reward_value)
         observation = next_obs
 
         if done:
             break
 
-    avg_reward = total_reward / len(steps) if steps else 0.0
+    avg_reward = total_reward / len(steps) if steps else EPS
 
     return RunResponse(
         task=req.task,

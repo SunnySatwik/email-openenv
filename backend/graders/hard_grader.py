@@ -22,6 +22,10 @@ from openai import OpenAI
 
 EPS = 1e-6
 
+def safe_score(x):
+    """Ensure score is strictly in (0, 1)."""
+    return max(EPS, min(1.0 - EPS, float(x)))
+
 WEIGHT_DECISION   = 0.50
 WEIGHT_RELEVANCE  = 0.30
 WEIGHT_QUALITY    = 0.20
@@ -108,8 +112,8 @@ def _llm_score(email_text: str, reply_text: str) -> tuple[float, float]:
         parsed = json.loads(content)
 
         return (
-            float(max(EPS, min(1.0 - EPS, parsed.get("relevance", 0)))),
-            float(max(EPS, min(1.0 - EPS, parsed.get("quality", 0)))),
+            float(safe_score(parsed.get("relevance", 0))),
+            float(safe_score(parsed.get("quality", 0))),
         )
 
     except Exception:
@@ -131,11 +135,11 @@ def _heuristic_relevance(email_text: str, reply_text: str) -> float:
     reply_words = set(re.findall(r"[a-z]+", reply_text.lower()))
 
     if not email_words:
-        return EPS
+        return safe_score(EPS)
 
     overlap = len(email_words & reply_words)
     # Normalise: full credit at 6+ meaningful overlapping words
-    return max(EPS, min(1.0 - EPS, overlap / 6))
+    return safe_score(max(EPS, min(1.0 - EPS, overlap / 6)))
 
 
 def _heuristic_quality(reply_text: str) -> float:
@@ -183,7 +187,7 @@ def _heuristic_quality(reply_text: str) -> float:
     elif sentence_count == 1:
         score += 0.10
 
-    return float(max(EPS, min(1.0 - EPS, score)))
+    return safe_score(float(max(EPS, min(1.0 - EPS, score))))
 
 
 # ── Spam guard ───────────────────────────────────────────────────────────────
@@ -214,7 +218,7 @@ def grade_hard(action: dict, email) -> float:
         Reward in [0.0, 1.0]
     """
     if not action or not isinstance(action, dict):
-        return EPS
+        return safe_score(EPS)
 
     # ── Unpack email ─────────────────────────────────────────────────────────
     if isinstance(email, dict):
@@ -233,21 +237,21 @@ def grade_hard(action: dict, email) -> float:
     # ── Spam guard ────────────────────────────────────────────────────────────
     # Never reward replying to what looks like spam, regardless of true_label
     if should_reply and _looks_like_spam(subject, body):
-        return EPS
+        return safe_score(EPS)
 
     # ── Decision score ────────────────────────────────────────────────────────
     if should_reply != reply_required:
-        return EPS
+        return safe_score(EPS)
 
     decision_score = WEIGHT_DECISION  # 0.50
 
     # If the correct decision was "don't reply", we're done
     if not should_reply:
-        return decision_score
+        return safe_score(decision_score)
 
     # If agent decided to reply but produced nothing, no content credit
     if not reply_text:
-        return decision_score
+        return safe_score(decision_score)
 
     # ── Content scoring ───────────────────────────────────────────────────────
     email_text = subject + " " + body
@@ -270,7 +274,7 @@ def grade_hard(action: dict, email) -> float:
 
     score = decision_score + relevance_score + quality_score
 
-    return max(EPS, min(1.0 - EPS, score))
+    return safe_score(max(EPS, min(1.0 - EPS, score)))
 
 
 # ── Convenience wrapper ───────────────────────────────────────────────────────

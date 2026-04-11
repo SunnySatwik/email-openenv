@@ -147,7 +147,7 @@ class EmailEnv:
         avg_reward = (
             total_reward / len(self.episode_rewards)
             if self.episode_rewards
-            else 0.0
+            else 1e-6
         )
 
         return {
