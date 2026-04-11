@@ -26,7 +26,6 @@ class EmailEnv:
         self.episode_rewards = []
 
     def _load_emails(self):
-        print("🔥 LOADING EMAIL DATASET")
         return [
             Email(
                 id="1",
@@ -88,7 +87,7 @@ class EmailEnv:
             raise RuntimeError("No more emails available")
 
         email = self.emails[self.current_email_idx]
-        print("EMAIL:", email.subject, email.true_label)
+        
         # ----------------------------
         # Compute reward
         # ----------------------------
