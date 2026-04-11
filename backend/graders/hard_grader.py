@@ -276,7 +276,8 @@ def grade_hard(action: dict, email) -> float:
 # ── Convenience wrapper ───────────────────────────────────────────────────────
 
 def grade(reply_text: str, should_reply: bool, email) -> float:
-    return grade_hard(
-        {"reply_text": reply_text, "should_reply": should_reply},
-        email,
-    )
+
+    score = grade_hard({"reply_text": reply_text, "should_reply": should_reply},
+            email
+            )
+    return max(EPS, min(1.0 - EPS, score))
