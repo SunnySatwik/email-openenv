@@ -139,7 +139,7 @@ def run_task(task):
         score = max(EPS, min(1.0 - EPS, score))
 
         print(
-            f"[END] success={str(score > 0.1).lower()} steps={len(rewards)} score={score:.6f} rewards={','.join(f'{r:.2f}' for r in rewards)}",
+            f"[END] success={str(score > 0.1).lower()} steps={len(rewards)} score={score:.6f} rewards={','.join(f'{r:.6f}' for r in rewards)}",
             flush=True
         )
 
