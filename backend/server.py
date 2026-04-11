@@ -21,11 +21,14 @@ from backend.baseline.run_agent import generate_action
 # Safety wrapper for scores
 # ────────────────────────────────────────────────────────────────────────────
 
-EPS = 1e-6
+MIN_SCORE = 0.05
+PERFECT_SCORE = 0.95
+
 
 def safe_score(x):
-    """Ensure reward is strictly in (0, 1)."""
-    return max(EPS, min(1.0 - EPS, float(x)))
+    """Ensure reward is strictly in (0.05, 0.95)."""
+    return max(MIN_SCORE, min(PERFECT_SCORE, float(x)))
+
 
 # ----------------------------
 # OpenAI client (lazy)
@@ -126,13 +129,7 @@ async def run_agent_once(observation: Observation, task: str):
     else:
         reward = grade_hard(action, observation.email)
 
-    # 🔥 HARD GUARANTEE
-    reward = float(reward) if reward is not None else EPS
-
-    if not (0.0 < reward < 1.0):
-        reward = safe_score(reward)
-
-    return action, reward, latency
+    return action, safe_score(reward), latency
 
 
 # ----------------------------
@@ -189,20 +186,12 @@ async def compare(req: CompareRequest):
 
     action, reward, latency = await run_agent_once(observation, req.task)
 
-    # 🔥 HARD SAFETY CHECK
-    try:
-        reward = float(reward)
-    except:
-        reward = EPS
-
-    if not (0.0 < reward < 1.0):
-        reward = safe_score(reward)
-
     return CompareResult(
         action=action,
         reward=reward,
         latency_ms=latency
     )
+
 
 # ----------------------------
 # RUN (FIXED)
@@ -231,31 +220,29 @@ async def run_episode(req: RunRequest):
                 reward_value = grade_hard(action, observation.email)
 
         except Exception:
-            reward_value = EPS
+            reward_value = MIN_SCORE
             done = True
             next_obs = observation
+
+        reward_safe = safe_score(reward_value)
 
         steps.append(
             StepResult(
                 step=step + 1,
                 email_id=getattr(observation.email, "id", str(step)),
                 action=action,
-                reward=safe_score(reward_value),
+                reward=reward_safe,
                 latency_ms=latency
             )
         )
 
-        total_reward += safe_score(reward_value)
+        total_reward += reward_safe
         observation = next_obs
 
         if done:
             break
 
-    avg_reward = total_reward / len(steps) if steps else EPS
-
-    # 🔥 CLAMP BOTH
-    total_reward = safe_score(total_reward / len(steps))  # normalize first
-    avg_reward = safe_score(avg_reward)
+    avg_reward = safe_score(total_reward / len(steps)) if steps else 0.5
 
     return RunResponse(
         task=req.task,

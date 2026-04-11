@@ -2,11 +2,9 @@ from backend.env.models import Email
 
 SPAM_INDICATORS = {"free", "win", "offer", "click", "limited", "act now", "urgent"}
 
-EPS = 1e-6
-
-def safe_score(x):
-    """Ensure score is strictly in (0, 1)."""
-    return max(EPS, min(1.0 - EPS, float(x)))
+# ── Score boundaries ────────────────────────────────────────────────────────
+MIN_SCORE = 0.05
+PERFECT_SCORE = 0.95
 
 
 def _has_spam_characteristics(email: Email) -> bool:
@@ -24,7 +22,7 @@ def _has_spam_characteristics(email: Email) -> bool:
 def grade_easy(action, email):
 
     if not action or not isinstance(action, dict):
-        return safe_score(EPS)
+        return MIN_SCORE
 
     if isinstance(email, dict):
         ground_truth = email.get("true_label", {}).get("spam", False)
@@ -35,22 +33,22 @@ def grade_easy(action, email):
     ground_truth = bool(ground_truth)
 
     if prediction == ground_truth:
-        return safe_score(1.0 - EPS)
+        return PERFECT_SCORE
 
     if prediction != ground_truth and _has_spam_characteristics(email):
-        return safe_score(0.5)
+        return 0.5
 
-    return safe_score(EPS)
+    return MIN_SCORE
 
 
 def grade(prediction, email):
     true_label = email.true_label.get("spam", False)
 
     if prediction == true_label:
-        return safe_score(1.0 - EPS)
+        return PERFECT_SCORE
 
     # 🔥 THIS LINE FIXES YOUR TEST
     if _has_spam_characteristics(email):
-        return safe_score(0.5)
+        return 0.5
 
-    return safe_score(EPS)
+    return MIN_SCORE

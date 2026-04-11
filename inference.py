@@ -9,6 +9,16 @@ API_KEY = os.getenv("HF_TOKEN") or os.getenv("API_KEY")
 BASE_URL = os.getenv("API_BASE_URL")
 MODEL = os.getenv("MODEL_NAME", "gpt-4o-mini")
 
+# ── Score boundaries ────────────────────────────────────────────────────────
+MIN_SCORE = 0.05
+PERFECT_SCORE = 0.95
+
+
+def safe_score(x):
+    """Ensure score is strictly in (0.05, 0.95)."""
+    return max(MIN_SCORE, min(PERFECT_SCORE, float(x)))
+
+
 # ✅ ALWAYS initialize client (no guards)
 client = None
 
@@ -115,10 +125,10 @@ def run_task(task):
 
             try:
                 obs, reward, done, _ = env.step(action)
-                reward_val = reward.value
+                reward_val = safe_score(reward.value)
                 error = None
             except Exception as e:
-                reward_val = 0.0
+                reward_val = MIN_SCORE
                 done = True
                 error = str(e)
 
@@ -132,11 +142,7 @@ def run_task(task):
             if done:
                 break
 
-        score = sum(rewards) / len(rewards) if rewards else 0.5
-
-        # 🔥 clamp final score too
-        EPS = 1e-6
-        score = max(EPS, min(1.0 - EPS, score))
+        score = safe_score(sum(rewards) / len(rewards)) if rewards else 0.5
 
         print(
             f"[END] success={str(score > 0.1).lower()} steps={len(rewards)} score={score:.6f} rewards={','.join(f'{r:.6f}' for r in rewards)}",
@@ -146,7 +152,7 @@ def run_task(task):
     except Exception as e:
         # 🔥 NEVER crash
         print(
-            f"[END] success=false steps=0 score=0.00 rewards= error={str(e)}",
+            f"[END] success=false steps=0 score=0.05 rewards= error={str(e)}",
             flush=True
         )
 

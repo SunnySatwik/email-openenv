@@ -53,7 +53,7 @@ class ReplyAction(BaseModel):
 
 class Reward(BaseModel):
     """Reward returned by the environment."""
-    value: float = Field(..., gt=0.0, lt=1.0, description="Reward score strictly between 0 and 1")
+    value: float = Field(..., gt=0.0, lt=1.0, description="Reward score strictly between 0 and 1 (0.05-0.95)")
     explanation: Optional[str] = Field(default=None, description="Optional explanation of reward")
 
 

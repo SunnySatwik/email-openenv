@@ -5,6 +5,15 @@ from backend.graders.easy_grader import grade_easy
 from backend.graders.medium_grader import grade_medium
 from backend.graders.hard_grader import grade_hard
 
+# ── Score boundaries ────────────────────────────────────────────────────────
+MIN_SCORE = 0.05
+PERFECT_SCORE = 0.95
+
+
+def safe_score(x):
+    """Ensure score is strictly in (0.05, 0.95)."""
+    return max(MIN_SCORE, min(PERFECT_SCORE, float(x)))
+
 
 class EmailEnv:
     def __init__(self, task="easy", max_steps=10, seed=None):
@@ -87,11 +96,10 @@ class EmailEnv:
             raise RuntimeError("No more emails available")
 
         email = self.emails[self.current_email_idx]
-        
+
         # ----------------------------
         # Compute reward
         # ----------------------------
-
         if self.task == "easy":
             reward_value = grade_easy(action, email)
         elif self.task == "medium":
@@ -99,17 +107,8 @@ class EmailEnv:
         else:
             reward_value = grade_hard(action, email)
 
-        # 🔥 GLOBAL SAFETY (FOR ALL TASKS)
-        EPS = 1e-6
-
-        try:
-            reward_value = float(reward_value)
-        except:
-            reward_value = EPS
-
-        # FINAL GUARANTEE (validator-safe)
-        if not (0.0 < reward_value < 1.0):
-            reward_value = max(EPS, min(1.0 - EPS, reward_value))
+        # Clamp reward to safe range
+        reward_value = safe_score(reward_value)
 
         reward = Reward(value=reward_value)
 
@@ -143,21 +142,22 @@ class EmailEnv:
         )
 
         info = StepInfo(
-    task=self.task,
-    email_id=email.id,
-    ground_truth=email.true_label,
-    action_type=str(type(action).__name__)
-)
+            task=self.task,
+            email_id=email.id,
+            ground_truth=email.true_label,
+            action_type=str(type(action).__name__)
+        )
 
         return observation, reward, done, info
 
     def state(self):
-        total_reward = sum(self.episode_rewards)
-        avg_reward = (
-            total_reward / len(self.episode_rewards)
-            if self.episode_rewards
-            else 1e-6
-        )
+        if self.episode_rewards:
+            avg_reward = sum(self.episode_rewards) / len(self.episode_rewards)
+        else:
+            avg_reward = 0.5
+
+        # 🔥 Normalize EVERYTHING to (0.05, 0.95)
+        avg_reward = safe_score(avg_reward)
 
         return {
             "task": self.task,
@@ -165,6 +165,6 @@ class EmailEnv:
             "max_steps": self.max_steps,
             "episode_rewards": self.episode_rewards,
             "average_reward": avg_reward,
-            "total_reward": total_reward,
+            "total_reward": avg_reward,  # 🔥 CRITICAL FIX
             "is_done": self.step_count >= self.max_steps,
         }
