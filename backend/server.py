@@ -126,7 +126,13 @@ async def run_agent_once(observation: Observation, task: str):
     else:
         reward = grade_hard(action, observation.email)
 
-    return action, safe_score(reward), latency
+    # 🔥 HARD GUARANTEE
+    reward = float(reward) if reward is not None else EPS
+
+    if not (0.0 < reward < 1.0):
+        reward = safe_score(reward)
+
+    return action, reward, latency
 
 
 # ----------------------------
@@ -183,12 +189,20 @@ async def compare(req: CompareRequest):
 
     action, reward, latency = await run_agent_once(observation, req.task)
 
+    # 🔥 HARD SAFETY CHECK
+    try:
+        reward = float(reward)
+    except:
+        reward = EPS
+
+    if not (0.0 < reward < 1.0):
+        reward = safe_score(reward)
+
     return CompareResult(
         action=action,
         reward=reward,
         latency_ms=latency
     )
-
 
 # ----------------------------
 # RUN (FIXED)
